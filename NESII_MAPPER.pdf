@@ -1,0 +1,193 @@
+{COMPONENT Z:\USERS\JOSEPHMARLIN\CODE\NESII\NESII_MAPPER.SYM
+
+ {ENVIRONMENT
+  {PDIFvrev 3.00}
+  {Program "CUPL(WM) Version 5.0a"}
+  {DBtype "Schematic"}
+  {DBvrev 1.01}
+  {DBtime "Tue Sep 05 17:42:49 2023 "}
+  {DBunit "MIL"}
+  {DBgrid 10}
+  {Lyrstr "WIRES" 1 "BUS" 1 "GATE" 2 "IEEE" 2 "PINFUN" 3 "PINNUM" 1 
+          "PINNAM" 6 "PINCON" 4 "REFDES" 2 "ATTR" 6 "SDOT" 1 
+          "DEVICE" 5 "OUTLIN" 5 "ATTR2" 6 "NOTES" 6 "NETNAM" 4 
+          "CMPNAM" 5 "BORDER" 5}
+ }
+
+ {USER
+  {VIEW
+   {Mode SYMB}
+   {Nlst OPEN}
+   {Vw 0 0 2}
+   {Lv 12 2 2 2 0 0 2 2 2 2 0 0 2 1 2 0 0 0 0}
+   {Gs 10 10}
+  }
+ }
+
+ {DISPLAY
+  [Ly "PINNUM"]
+  [Ls "SOLID"][Wd 0]
+  [Ts 15][Tj "LC"][Tr 0][Tm "N"]
+ }
+
+ {SYMBOL
+  {PIN_DEF
+   [Ly "PINCON"]
+   {P CPU_RWB {Pt "INPUT"}{Lq 0}{Ploc 100 200}}
+   {P CA8 {Pt "INPUT"}{Lq 0}{Ploc 100 180}}
+   {P CA9 {Pt "INPUT"}{Lq 0}{Ploc 100 160}}
+   {P CA10 {Pt "INPUT"}{Lq 0}{Ploc 100 140}}
+   {P CA11 {Pt "INPUT"}{Lq 0}{Ploc 100 120}}
+   {P CA12 {Pt "INPUT"}{Lq 0}{Ploc 100 100}}
+   {P CA13 {Pt "INPUT"}{Lq 0}{Ploc 100 80}}
+   {P CA14 {Pt "INPUT"}{Lq 0}{Ploc 100 60}}
+   {P M2 {Pt "INPUT"}{Lq 0}{Ploc 100 40}}
+   {P ROMSELB {Pt "INPUT"}{Lq 0}{Ploc 100 20}}
+   {P AII_IOSE {Pt "I/O"}{Lq 0}{Ploc 350 20}}
+   {P AII_DEVS {Pt "I/O"}{Lq 0}{Ploc 350 40}}
+   {P AII_IOST {Pt "I/O"}{Lq 0}{Ploc 350 60}}
+   {P DBG_RDB {Pt "I/O"}{Lq 0}{Ploc 350 80}}
+   {P DBG_WRB {Pt "I/O"}{Lq 0}{Ploc 350 100}}
+   {P CPU_WRB {Pt "I/O"}{Lq 0}{Ploc 350 120}}
+   {P PRG_RAM_ {Pt "I/O"}{Lq 0}{Ploc 350 140}}
+   {P BIOS_ROM {Pt "I/O"}{Lq 0}{Ploc 350 160}}
+  }
+
+  {PKG
+   [Ly "REFDES"]
+   [Ts 25][Tj "CB"][Tr 0][Tm "N"]
+   {Rdl 225 230}
+
+   [Ly "PINNUM"]
+   [Ts 15][Tj "RC"]
+   {Pnl 120 210}
+   {Pnl 120 190}
+   {Pnl 120 170}
+   {Pnl 120 150}
+   {Pnl 120 130}
+   {Pnl 120 110}
+   {Pnl 120 90}
+   {Pnl 120 70}
+   {Pnl 120 50}
+   {Pnl 120 30}
+   [Ts 15][Tj "LC"]
+   {Pnl 330 30}
+   {Pnl 330 50}
+   {Pnl 330 70}
+   {Pnl 330 90}
+   {Pnl 330 110}
+   {Pnl 330 130}
+   {Pnl 330 150}
+   {Pnl 330 170}
+
+   {Sd A 1 2 3 4 5 6 7 8 9 11 12 13 14 15 16 17 18 19}
+  }
+
+  {PIC
+   [Ly "GATE"]
+   [Ts 15][Tj "LC"][Tr 0][Tm "N"]
+   {R 130 220 320 0}
+   {L 130 200 100 200}
+   {L 130 180 100 180}
+   {L 130 160 100 160}
+   {L 130 140 100 140}
+   {L 130 120 100 120}
+   {L 130 100 100 100}
+   {L 130 80 100 80}
+   {L 130 60 100 60}
+   {L 130 40 100 40}
+   {L 130 20 100 20}
+   {L 320 20 350 20}
+   {L 320 40 350 40}
+   {L 320 60 350 60}
+   {L 320 80 350 80}
+   {L 320 100 350 100}
+   {L 320 120 350 120}
+   {L 320 140 350 140}
+   {L 320 160 350 160}
+   [Ly "PINNAM"]
+   [Tj "LC"]
+   {T "CPU_RWB" 140 200}
+   {T "CA8" 140 180}
+   {T "CA9" 140 160}
+   {T "CA10" 140 140}
+   {T "CA11" 140 120}
+   {T "CA12" 140 100}
+   {T "CA13" 140 80}
+   {T "CA14" 140 60}
+   {T "M2" 140 40}
+   {T "ROMSELB" 140 20}
+   [Tj "RC"]
+   {T "AII_IOSE" 310 20}
+   {T "AII_DEVS" 310 40}
+   {T "AII_IOST" 310 60}
+   {T "DBG_RDB" 310 80}
+   {T "DBG_WRB" 310 100}
+   {T "CPU_WRB" 310 120}
+   {T "PRG_RAM_" 310 140}
+   {T "BIOS_ROM" 310 160}
+   [Ly "DEVICE"]
+   [Tj "CT"]
+   {T "G16V8MA" 225 -10}
+  }
+
+  {ATR
+   {IN
+    {Org 100 20}
+    {Ty 255}
+   }
+   {EX
+    [Ly "ATTR2"]
+    [Ts 12][Tj "CT"][Tr 0][Tm "N"]
+    {At PLD Z:\USERS\JOSEPHMARLIN\CODE\NESII\NESII_MAPPER 225 220}
+   }
+  }
+ }
+
+ {DETAIL
+  {ANNOTATE
+  }
+
+  {NET_DEF
+   {N CPU_RWB
+   }
+   {N CA8
+   }
+   {N CA9
+   }
+   {N CA10
+   }
+   {N CA11
+   }
+   {N CA12
+   }
+   {N CA13
+   }
+   {N CA14
+   }
+   {N M2
+   }
+   {N ROMSELB
+   }
+   {N AII_IOSE
+   }
+   {N AII_DEVS
+   }
+   {N AII_IOST
+   }
+   {N DBG_RDB
+   }
+   {N DBG_WRB
+   }
+   {N CPU_WRB
+   }
+   {N PRG_RAM_
+   }
+   {N BIOS_ROM
+   }
+  }
+
+  {SUBCOMP
+  }
+ }
+}

@@ -1,0 +1,41 @@
+Name       NESII_MAPPER;
+Partno     NESII_MAPPER;
+Date       08/28/23;
+Revision   01;
+Designer   track_zero;
+Company    Makaira;
+Device     g16v8ma;
+
+/** Inputs **/ 
+PIN    1  = CPU_RWB;
+PIN    2  = CA8;
+PIN    3  = CA9;
+PIN    4  = CA10;
+PIN    5  = CA11;
+PIN    6  = CA12;
+PIN    7  = CA13;
+PIN    8  = CA14;
+PIN    9  = M2;
+PIN    11 = ROMSELB;
+
+/** Outputs **/
+PIN   12 = AII_IOSELB; 
+PIN    13 = AII_DEVSELB;
+PIN    14 = AII_IOSTROBEB;
+PIN    15 = DBG_RDB;
+PIN    16 = DBG_WRB;
+PIN    17 = CPU_WRB;
+PIN    18 = PRG_RAM_CEB;
+PIN    19 = BIOS_ROM_CEB;
+
+/** Logic Equations **/
+AII_DEVSELB = ROMSELB # !CA14 # CA13 # CA12 # CA11 # CA10 # CA9;
+AII_IOSELB = ROMSELB # !CA14 # CA13 # CA12 # CA11 # !CA10 # !CA9;
+AII_IOSTROBEB = ROMSELB # !CA14 # CA13 # CA12 # !CA11;
+DBG_RDB = ROMSELB # !CPU_RWB # CA14 # CA13 # CA12 # CA11 # CA10;
+DBG_WRB = ROMSELB # CPU_RWB # CA14 # CA13 # CA12 # CA11 # CA10;
+CPU_WRB = !CPU_RWB;
+PRG_RAM_CEB = ROMSELB # CA14 # (!CA13 & !CA12 & !CA11 & !CA10 & !CA9);
+BIOS_ROM_CEB = ROMSELB # !CA14 # !CA13;
+
+
