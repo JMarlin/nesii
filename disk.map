@@ -1,0 +1,60 @@
+Modules list:
+-------------
+diskmain.o:
+    CODE_MAIN         Offs=000000  Size=000023  Align=00001  Fill=0000
+rwtsapi.o:
+    CODE_MAIN         Offs=000023  Size=0002D6  Align=00001  Fill=0000
+rwts.o:
+    CODE_MAIN         Offs=0002F9  Size=0004FF  Align=00001  Fill=0000
+
+
+Segment list:
+-------------
+Name                   Start     End    Size  Align
+----------------------------------------------------
+CODE_MAIN             008200  0089F7  0007F8  00001
+
+
+Exports list by name:
+---------------------
+DELAY                     0086F8 RLA    POSTNB16                  0085BB RLA    
+PRENIBL                   0084F9 RLA    RDADDR                    00863D RLA    
+READATA                   0085D5 RLA    RWTS                      008223 RLA    
+RWTSBUF1                  0087F8 RLA    SEEKABS                   008699 RLA    
+WRITADR                   00894E RLA    WRITESEC                  008523 RLA    
+
+
+
+Exports list by value:
+----------------------
+RWTS                      008223 RLA    PRENIBL                   0084F9 RLA    
+WRITESEC                  008523 RLA    POSTNB16                  0085BB RLA    
+READATA                   0085D5 RLA    RDADDR                    00863D RLA    
+SEEKABS                   008699 RLA    DELAY                     0086F8 RLA    
+RWTSBUF1                  0087F8 RLA    WRITADR                   00894E RLA    
+
+
+
+Imports list:
+-------------
+DELAY (rwts.o):
+    rwtsapi.o                 rwtsapi.asm(14)
+POSTNB16 (rwts.o):
+    rwtsapi.o                 rwtsapi.asm(10)
+PRENIBL (rwts.o):
+    rwtsapi.o                 rwtsapi.asm(13)
+RDADDR (rwts.o):
+    rwtsapi.o                 rwtsapi.asm(12)
+READATA (rwts.o):
+    rwtsapi.o                 rwtsapi.asm(11)
+RWTS (rwtsapi.o):
+    diskmain.o                diskmain.asm(5)
+RWTSBUF1 (rwts.o):
+    rwtsapi.o                 rwtsapi.asm(7)
+SEEKABS (rwts.o):
+    rwtsapi.o                 rwtsapi.asm(8)
+WRITADR (rwts.o):
+    rwtsapi.o                 rwtsapi.asm(6)
+WRITESEC (rwts.o):
+    rwtsapi.o                 rwtsapi.asm(9)
+

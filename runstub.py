@@ -39,9 +39,15 @@ while True:
     if byte == b"":
         break
 
-    ser.write(bytes(byte.hex() + ", ", 'ascii'))
-    print(ser.read(4).decode('ascii'))
-    #print(".", end="")
+    cmdString = byte.hex() + ", "
+    ser.write(bytes(cmdString, 'ascii'))
+    readback = ser.read(4).decode('ascii')
+
+    if readback != cmdString:
+        print("ERROR: {} != {}")
+        quit()
+
+    print(readback, end="")
     sys.stdout.flush()
 
 print("done")
@@ -53,6 +59,7 @@ print(ser.read(len(sys.argv[2] + " G ")).decode('ascii'))
 sys.stdout.flush()
 
 print("done")
+sys.stdout.flush()
 
 ser.close()
 file.close()

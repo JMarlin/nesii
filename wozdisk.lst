@@ -1,0 +1,285 @@
+ca65 V2.18 - N/A
+Main file   : wozdisk.asm
+Current file: wozdisk.asm
+
+000000r 1               ;********************************************************************************
+000000r 1               ;* Disk ][ controller card "BOOT0" code, found in the slot ROM.  Reads the      *
+000000r 1               ;* BOOT1 code from track 0, sector 0, and jumps to it.                          *
+000000r 1               ;*                                                                              *
+000000r 1               ;* Copyright Apple Computer Inc.                                                *
+000000r 1               ;*                                                                              *
+000000r 1               ;* Written by [a genius...Woz?]                                                 *
+000000r 1               ;********************************************************************************
+000000r 1               ;* Extracted from AppleWin at $C600.                                            *
+000000r 1               ;*                                                                              *
+000000r 1               ;* Project created by Andy McFadden, using 6502bench SourceGen v1.5             *
+000000r 1               ;* Last updated 2020/01/15                                                      *
+000000r 1               ;********************************************************************************
+000000r 1               STACK         =     $0100
+000000r 1               TWOS_BUFFER   =     $0300   ;holds the 2-bit chunks
+000000r 1               CONV_TAB      =     $0356   ;6+2 conversion table
+000000r 1               BOOT1         =     $0400   ;buffer for next stage of loader
+000000r 1               IWM_PH0_OFF   =     $c080   ;stepper motor control
+000000r 1               IWM_PH0_ON    =     $c081   ;stepper motor control
+000000r 1               IWM_MOTOR_ON  =     $c089   ;starts drive spinning
+000000r 1               IWM_SEL_DRIVE_1 =   $c08a   ;selects drive 1
+000000r 1               IWM_Q6_OFF    =     $c08c   ;read
+000000r 1               IWM_Q7_OFF    =     $c08e   ;WP sense/read
+000000r 1               MONITOR_ENTRY =     $e147
+000000r 1               
+000000r 1               .SEGMENT "CODE_MAIN"
+000000r 1               data_ptr      =    $26       ;pointer to BOOT1 data buffer
+000000r 1               slot_index    =    $2b       ;slot number << 4
+000000r 1               bits          =    $3c       ;temp storage for bit manipulation
+000000r 1               sector        =    $3d       ;sector to read
+000000r 1               found_track   =    $40       ;track found
+000000r 1               track         =    $41       ;track to read
+000000r 1               
+000000r 1               .GLOBAL READ_SECTOR
+000000r 1               READ_SECTOR:
+000000r 1  A2 20            ldx     #$20              ;20/00/03 is the controller signature
+000002r 1               ;
+000002r 1               ; Generate a decoder table for 6+2 encoded data.
+000002r 1               ;
+000002r 1               ; This stores the values $00-$3f in a table on page 3.  The byte values that
+000002r 1               ; will be decoded are non-consecutive, so the decoder entries occupy various
+000002r 1               ; locations from $36c to $3d5.  Nearby bytes are left unchanged.
+000002r 1               ;
+000002r 1               ; We want 64 values that have the high bit set and don't have two consecutive 0
+000002r 1               ; bits.  This is required by the disk hardware.  There are 70 possible values,
+000002r 1               ; so we also mandate that there are two adjacent 1 bits, excluding bit 7.  (Note
+000002r 1               ; that $D5 and $AA, used to identify sector headers, do not meet these criteria,
+000002r 1               ; which means they never appear in the encoded data.)
+000002r 1               ;
+000002r 1               ; In the code below, ASL+BIT+BCS test checks for adjacent 1s: if no two are
+000002r 1               ; adjacent, the BIT will be zero.  If the high bit is set, ASL will set the
+000002r 1               ; carry.
+000002r 1               ;
+000002r 1               ; When we ORA the original and shifted values together, if there were three
+000002r 1               ; adjacent 0s, there will still be at least two adjacent 0s.  We EOR to invert
+000002r 1               ; the bits, and then look for two adjacent 1s.  We do this by just shifting
+000002r 1               ; right until a 1 shifts into the carry, and if the A-reg is nonzero we know
+000002r 1               ; there were at least two 1 bits.  We need to ignore the bits on the ends:
+000002r 1               ; nonzero high bit was handled earlier, and the low bit can false-positive
+000002r 1               ; because ASL always shifts a 0 in (making it look like a 0 in the low bit is
+000002r 1               ; adjacent to another 0), so we just mask those off with the AND.
+000002r 1               ;
+000002r 1               ; For example, we want to decode $A6 to $07.  Y=$07 when X=$26...
+000002r 1               ;   TXA --> 0010 0110
+000002r 1               ;   ASL --> 0100 1100 C=0   (high bit is clear)
+000002r 1               ;   BIT --> Z=0             (only possible with adjacent bits)
+000002r 1               ;   ORA --> 0110 1110       (adjacent 0s become visible)
+000002r 1               ;   EOR --> 1001 0001       (turn them into 1s)
+000002r 1               ;   AND --> 0001 0000       (ignore the hi/lo)
+000002r 1               ;   LSR --> 0000 1000, repeat until A=0 C=1
+000002r 1               ;
+000002r 1  A0 00            ldy     #$00
+000004r 1  A2 03            ldx     #$03
+000006r 1               CreateDecTabLoop:
+000006r 1  86 3C            stx     bits
+000008r 1  8A               txa
+000009r 1  0A               asl     A                 ;shift left, putting high bit in carry
+00000Ar 1  24 3C            bit     bits              ;does shifted version overlap?
+00000Cr 1  F0 10            beq     @reject           ;no, doesn't have two adjacent 1s
+00000Er 1  05 3C            ora     bits              ;merge
+000010r 1  49 FF            eor     #$ff              ;invert
+000012r 1  29 7E            and     #$7e              ;clear hi and lo bits
+000014r 1               @check_dub0:
+000014r 1  B0 08            bcs     @reject           ;initial hi bit set *or* adjacent 0 bits set
+000016r 1  4A               lsr     A                 ;shift right, low bit into carry
+000017r 1  D0 FB            bne     @check_dub0       ;if more bits in byte, loop
+000019r 1  98               tya                       ;we have a winner... store Y-reg to memory
+00001Ar 1  9D 56 03         sta     CONV_TAB,x        ;actual lookup will be on bytes with hi bit set
+00001Dr 1  C8               iny                       ; so they'll read from CONV_TAB-128
+00001Er 1               @reject:
+00001Er 1  E8               inx                       ;try next candidate
+00001Fr 1  10 E5            bpl     CreateDecTabLoop
+000021r 1               ;
+000021r 1               ; Prep the hardware.
+000021r 1               ;
+000021r 1  A9 60            lda #$60
+000023r 1  85 2B            sta     slot_index        ;keep this around
+000025r 1  AA               tax
+000026r 1  BD 8E C0         lda     IWM_Q7_OFF,x      ;set to read mode
+000029r 1  BD 8C C0         lda     IWM_Q6_OFF,x
+00002Cr 1  BD 8A C0         lda     IWM_SEL_DRIVE_1,x ;select drive 1
+00002Fr 1  BD 89 C0         lda     IWM_MOTOR_ON,x    ;spin it up
+000032r 1               ;
+000032r 1               ; Blind-seek to track 0.
+000032r 1               ;
+000032r 1  A0 50            ldy     #80               ;80 phases (40 tracks)
+000034r 1               seek_loop:
+000034r 1  BD 80 C0         lda     IWM_PH0_OFF,x     ;turn phase N off
+000037r 1  98               tya
+000038r 1  29 03            and     #$03              ;mod the phase number to get 0-3
+00003Ar 1  0A               asl     A                 ;double it to 0/2/4/6
+00003Br 1  05 2B            ora     slot_index        ;add in the slot index
+00003Dr 1  AA               tax
+00003Er 1  BD 81 C0         lda     IWM_PH0_ON,x      ;turn on phase 0, 1, 2, or 3
+000041r 1  A9 60            lda     #$60
+000043r 1  20 rr rr         jsr     MON_WAIT          ;wait 19664 cycles
+000046r 1  88               dey                       ;next phase
+000047r 1  10 EB            bpl     seek_loop
+000049r 1  85 26            sta     data_ptr          ;A-reg is 0 when MON_WAIT returns
+00004Br 1  85 3D            sta     sector            ;so we're looking for T=0 S=0
+00004Dr 1  85 41            sta     track
+00004Fr 1  A9 04            lda     #>BOOT1           ;write the output here
+000051r 1  85 27            sta     data_ptr+1
+000053r 1               ;
+000053r 1               ; Sector read routine.
+000053r 1               ;
+000053r 1               ; Read bytes until we find an address header (D5 AA 96) or data header (D5 AA
+000053r 1               ; AD), depending on which mode we're in.
+000053r 1               ;
+000053r 1               ; This will also be called by the BOOT1 code read from the floppy disk.
+000053r 1               ;
+000053r 1               ; On entry:
+000053r 1               ;   X: slot * 16
+000053r 1               ;   $26-27: data pointer
+000053r 1               ;   $3d: desired sector
+000053r 1               ;   $41: desired track
+000053r 1               ;
+000053r 1               ReadSector:
+000053r 1  18               clc                       ;C=0 to look for addr (C=1 for data)
+000054r 1               ReadSector_C:
+000054r 1  08               php
+000055r 1               @rdbyte1:
+000055r 1  BD 8C C0         lda     IWM_Q6_OFF,x      ;wait for byte
+000058r 1  10 FB            bpl     @rdbyte1          ;not yet, loop
+00005Ar 1               @check_d5:
+00005Ar 1  49 D5            eor     #$d5              ;is it $d5?
+00005Cr 1  D0 F7            bne     @rdbyte1          ;no, keep looking
+00005Er 1               @rdbyte2:
+00005Er 1  BD 8C C0         lda     IWM_Q6_OFF,x      ;grab another byte
+000061r 1  10 FB            bpl     @rdbyte2
+000063r 1  C9 AA            cmp     #$aa              ;is it $aa?
+000065r 1  D0 F3            bne     @check_d5         ;no, check if it's another $d5
+000067r 1  EA               nop                       ;(?)
+000068r 1               @rdbyte3:
+000068r 1  BD 8C C0         lda     IWM_Q6_OFF,x      ;grab a third byte
+00006Br 1  10 FB            bpl     @rdbyte3
+00006Dr 1  C9 96            cmp     #$96              ;is it $96?
+00006Fr 1  F0 09            beq     FoundAddress      ;winner
+000071r 1  28               plp                       ;did we want data?
+000072r 1  90 DF            bcc     ReadSector        ;nope, keep looking
+000074r 1  49 AD            eor     #$ad              ;yes, see if it's data prologue
+000076r 1  F0 25            beq     FoundData         ;got it, read the data (note A-reg = 0)
+000078r 1  D0 D9            bne     ReadSector        ;keep looking
+00007Ar 1               
+00007Ar 1               ;
+00007Ar 1               ; Read the sector address data.  Four fields, in 4+4 encoding: volume, track,
+00007Ar 1               ; sector, checksum.
+00007Ar 1               ;
+00007Ar 1               FoundAddress:
+00007Ar 1  A0 03            ldy     #$03              ;sector # is the 3rd item in header
+00007Cr 1               @hdr_loop:
+00007Cr 1  85 40            sta     found_track       ;store $96, then volume, then track
+00007Er 1               @rdbyte1:
+00007Er 1  BD 8C C0         lda     IWM_Q6_OFF,x      ;read first part
+000081r 1  10 FB            bpl     @rdbyte1
+000083r 1  2A               rol     A                 ;first byte has bits 7/5/3/1
+000084r 1  85 3C            sta     bits
+000086r 1               @rdbyte2:
+000086r 1  BD 8C C0         lda     IWM_Q6_OFF,x      ;read second part
+000089r 1  10 FB            bpl     @rdbyte2
+00008Br 1  25 3C            and     bits              ;merge them
+00008Dr 1  88               dey                       ;is this the 3rd item?
+00008Er 1  D0 EC            bne     @hdr_loop         ;nope, keep going
+000090r 1  28               plp                       ;pull this off to keep stack in balance
+000091r 1  C5 3D            cmp     sector            ;is this the sector we want?
+000093r 1  D0 BE            bne     ReadSector        ;no, go back to looking for addresses
+000095r 1  A5 40            lda     found_track
+000097r 1  C5 41            cmp     track             ;correct track?
+000099r 1  D0 B8            bne     ReadSector        ;no, try again
+00009Br 1  B0 B7            bcs     ReadSector_C      ;correct T/S, go find data (branch-always)
+00009Dr 1               
+00009Dr 1               ;
+00009Dr 1               ; Read the 6+2 encoded sector data.
+00009Dr 1               ;
+00009Dr 1               ; Values range from $96 - $ff.  They must have the high bit set, and must not
+00009Dr 1               ; have three consecutive zeroes.
+00009Dr 1               ;
+00009Dr 1               ; The data bytes are written to disk with a rolling XOR to compute a checksum,
+00009Dr 1               ; so we read them back the same way.  We keep this in the A-reg for the
+00009Dr 1               ; duration.  The actual value is always in the range [$00,$3f] (6 bits).
+00009Dr 1               ;
+00009Dr 1               ; On entry:
+00009Dr 1               ;   A: $00
+00009Dr 1               ;
+00009Dr 1               FoundData:
+00009Dr 1  A0 56            ldy     #86               ;read 86 bytes of data into $300-355
+00009Fr 1               @read_twos_loop:
+00009Fr 1  84 3C            sty     bits              ;each byte has 3 sets of 2 bits, encoded
+0000A1r 1               @rdbyte1:
+0000A1r 1  BC 8C C0         ldy     IWM_Q6_OFF,x
+0000A4r 1  10 FB            bpl     @rdbyte1
+0000A6r 1  59 D6 02         eor     $02d6,y           ;$02d6 + $96 = $36c, our first table entry
+0000A9r 1  A4 3C            ldy     bits
+0000ABr 1  88               dey
+0000ACr 1  99 00 03         sta     TWOS_BUFFER,y     ;store these in our page 3 buffer
+0000AFr 1  D0 EE            bne     @read_twos_loop
+0000B1r 1               
+0000B1r 1               @read_sixes_loop:
+0000B1r 1  84 3C            sty     bits              ;read 256 bytes of data into $800
+0000B3r 1               @rdbyte2:
+0000B3r 1  BC 8C C0         ldy     IWM_Q6_OFF,x      ;each byte has the high 6 bits, encoded
+0000B6r 1  10 FB            bpl     @rdbyte2
+0000B8r 1  59 D6 02         eor     CONV_TAB-128,y
+0000BBr 1  A4 3C            ldy     bits
+0000BDr 1  91 26            sta     (data_ptr),y      ;store these in the eventual data buffer
+0000BFr 1  C8               iny
+0000C0r 1  D0 EF            bne     @read_sixes_loop
+0000C2r 1               
+0000C2r 1               @rdbyte3:
+0000C2r 1  BC 8C C0         ldy     IWM_Q6_OFF,x      ;read checksum byte
+0000C5r 1  10 FB            bpl     @rdbyte3
+0000C7r 1  59 D6 02         eor     CONV_TAB-128,y    ;does it match?
+0000CAr 1               @another:
+0000CAr 1  D0 87            bne     ReadSector        ;no, try to find one that's undamaged
+0000CCr 1               ;
+0000CCr 1               ; Decode the 6+2 encoding.  The high 6 bits of each byte are in place, now we
+0000CCr 1               ; just need to shift the low 2 bits of each in.
+0000CCr 1               ;
+0000CCr 1  A0 00            ldy     #$00              ;update 256 bytes
+0000CEr 1               @init_x:
+0000CEr 1  A2 56            ldx     #86               ;run through the 2-bit pieces 3x (86*3=258)
+0000D0r 1               @decode_loop:
+0000D0r 1  CA               dex
+0000D1r 1  30 FB            bmi     @init_x           ;if we hit $2ff, go back to $355
+0000D3r 1  B1 26            lda     (data_ptr),y      ;foreach byte in the data buffer...
+0000D5r 1  5E 00 03         lsr     TWOS_BUFFER,x     ; grab the low two bits from the stuff at $300-$355
+0000D8r 1  2A               rol     A                 ; and roll them into the low two bits of the byte
+0000D9r 1  5E 00 03         lsr     TWOS_BUFFER,x
+0000DCr 1  2A               rol     A
+0000DDr 1  91 26            sta     (data_ptr),y
+0000DFr 1  C8               iny
+0000E0r 1  D0 EE            bne     @decode_loop
+0000E2r 1               ;
+0000E2r 1               ; Advance the data pointer and sector number, and check to see if the sector
+0000E2r 1               ; number matches the first byte of BOOT1.  If it does, we're done.  If not, go
+0000E2r 1               ; read the next sector.
+0000E2r 1               ;
+0000E2r 1  E6 27            inc     data_ptr+1
+0000E4r 1  E6 3D            inc     sector
+0000E6r 1  A5 3D            lda     sector            ;sector we'd read next
+0000E8r 1  CD 00 04         cmp     BOOT1             ;is next sector < BOOT1?
+0000EBr 1  A6 2B            ldx     slot_index
+0000EDr 1  90 DB            bcc     @another          ;yes, go get another sector (note branch x2)
+0000EFr 1               
+0000EFr 1               ; Return to monitor
+0000EFr 1  4C 47 E1         jmp MONITOR_ENTRY
+0000F2r 1               
+0000F2r 1               MON_WAIT:
+0000F2r 1  38               sec                   ;2: Prepare to Subtract w/o Borrow
+0000F3r 1               MON_WAIT2:
+0000F3r 1  48               pha                   ;3: Push Accumulator (Save on STACK)
+0000F4r 1               MON_WAIT3:
+0000F4r 1  E9 01            sbc   #1              ;2: Subtract w/o Borrow [A-Data-!C]
+0000F6r 1  D0 FC            bne   MON_WAIT3       ;2+ Loop Until (A=0) [5 cycles/iteration]
+0000F8r 1                                         ;   ^[4 cycles/iteration when (A=0)]
+0000F8r 1  68               pla                   ;4: Pull Accumulator (Retrieve from STACK)
+0000F9r 1  E9 01            sbc   #1              ;2: Subtract w/o Borrow [A-Data-!C]
+0000FBr 1  D0 F6            bne   MON_WAIT2       ;2+ Loop Until (A=0) [~5*(A)+12 cycles/it]
+0000FDr 1                                         ;   ^[~5*(A)+11 cycles/it when (A=0)]
+0000FDr 1  60               rts                   ;6: Return to Caller
+0000FDr 1               

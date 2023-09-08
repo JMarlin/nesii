@@ -1,0 +1,50 @@
+ca65 V2.18 - N/A
+Main file   : diskmain.asm
+Current file: diskmain.asm
+
+000000r 1               .SEGMENT "CODE_MAIN"
+000000r 1               
+000000r 1               MONITOR_ENTRY = $E147
+000000r 1               
+000000r 1               .GLOBAL RWTS
+000000r 1               
+000000r 1               MAIN:
+000000r 1  A0 rr        LDY #<FORMATBLK
+000002r 1  A9 rr        LDA #>FORMATBLK
+000004r 1  20 rr rr     JSR RWTS
+000007r 1  4C 47 E1     JMP MONITOR_ENTRY
+00000Ar 1               
+00000Ar 1               .GLOBAL FORMATBLK
+00000Ar 1               FORMATBLK:
+00000Ar 1  01           .BYTE $01 ;00 Table type . must be $01
+00000Br 1  60           .BYTE $60 ;01 Slot number times 16 (sO: s = slot. Example: $60)
+00000Cr 1  01           .BYTE $01 ;02 Drive number ($01 or $02)
+00000Dr 1  00           .BYTE $00 ;03 Volume number expected ($00  any volume)
+00000Er 1  00           .BYTE $00 ;04 Track number (SOD through 522)
+00000Fr 1  00           .BYTE $00 ;05 Sector number ($00 through SOP)
+000010r 1  rr rr        .WORD DEVICE_CHARACTERISTICS ;06-07 Address (LO/ HI) of the Device Characteristics Table
+000012r 1  00 00        .WORD $0000 ;08-09 Address (LO/ HI) of the 256 byte buffer for READ/ WRITE
+000014r 1  00           .BYTE $00 ;0A Not used
+000015r 1  00           .BYTE $00 ;0B Byte count for partial sector ($00 for 256 bytes)
+000016r 1  04           .BYTE $04 ;0C Command code $00 - SEEK
+000017r 1                         ;                $01 - READ
+000017r 1                         ;                $02 - WRITE
+000017r 1                         ;               $04 - FORMAT
+000017r 1  00           .BYTE $00 ;0D Return code - The processor CARRY flag is set upon
+000018r 1                         ;                 return from RWTS if there is a
+000018r 1                         ;                 non-zero return code:
+000018r 1                         ;                 $00 - No errors
+000018r 1                         ;                 $08 - Error during initialization
+000018r 1                         ;                 $10 - Write protect error
+000018r 1                         ;                 $20 - Volume mismatch error
+000018r 1                         ;                 $40 - Drive ercor
+000018r 1                         ;                 $80 - Read error (obsolete)
+000018r 1  00           .BYTE $00 ;0E Volume number of last access (must be initialized)
+000019r 1  60           .BYTE $60 ;0F Slot number of last access * 16 (must be initialized)
+00001Ar 1  01           .BYTE $01 ;10 Drive nuaber of last access (must be initialized)
+00001Br 1               
+00001Br 1               DEVICE_CHARACTERISTICS:
+00001Br 1  00           .BYTE $00   ;00 Device type (should be $00 for DISK II)
+00001Cr 1  01           .BYTE $01   ;01 Phaaes per track (should be $01 for DISK II)
+00001Dr 1  D8 EF        .WORD $EFD8 ;02-03 Motor on time count (should be $EFD8 for DISK II)
+00001Dr 1               
