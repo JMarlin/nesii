@@ -1,8 +1,6 @@
 .SEGMENT "CODE_MAIN"
 .INCLUDE "monitor.inc"
-
-.GLOBAL PICO_RX
-.GLOBAL PICO_TX
+.INCLUDE "char_io.inc"
 
 ; C'mon, the Compact MONitor
 ; written by Bruce Clark and placed in the public domain
@@ -37,7 +35,7 @@ HEIGHT = 20
        PHP
        TXA
        PHA
-       JSR PICO_TX
+       JSR PRNTCHR
        PLA
        TAX
        PLP 
@@ -50,7 +48,7 @@ HEIGHT = 20
        TYA
        PHA
        PHP
-       JSR PICO_RX
+       JSR GETKEY
        TAX
        PLP
        PLA
