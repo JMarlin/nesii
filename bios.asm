@@ -186,6 +186,7 @@ TILE_LOAD_LOOP:
     STA IS_SCROLLING
 
 ;Indicate that we haven't yet clocked in any bits from the keyboard
+    JSR INITKEYBOARD
     LDA #$FF
     STA LAST_KB_BIT
     LDA #$00

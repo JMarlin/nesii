@@ -2,6 +2,7 @@
 .INCLUDE "char_io.inc"
 
 INITKEYBOARD:
+.GLOBAL INITKEYBOARD
     ;Loop over each column and check the 7th row to see if we are at column 1
 KB_INIT_COLUMN_LOOP:
     LDA #$01
