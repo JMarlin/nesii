@@ -77,6 +77,7 @@ PRNTCHR:
     ;Look up the tile number of this character, print nothing if it was zero
     TAX
     LDA CHR_LUT,X
+    CMP #$FF
     BEQ CHECK_CTL
 
     ;Non-zero tile number found, write it to the PPU and increment the cursor
@@ -278,38 +279,38 @@ KEY_LUT:
 
 .SEGMENT "CHR_LUT"
 CHR_LUT:
-.BYTE $3F ; 0x0 
-.BYTE $3F ; 0x1
-.BYTE $3F ; 0x2
-.BYTE $3F ; 0x3
-.BYTE $3F ; 0x4
-.BYTE $3F ; 0x5
-.BYTE $3F ; 0x6
-.BYTE $3F ; 0x7
-.BYTE $3F ; 0x8
-.BYTE $3F ; 0x9
-.BYTE $3F ; 0xa
-.BYTE $3F ; 0xb
-.BYTE $3F ; 0xc
-.BYTE $3F ; 0xd
-.BYTE $3F ; 0xe
-.BYTE $3F ; 0xf
-.BYTE $3F ; 0x10
-.BYTE $3F ; 0x11
-.BYTE $3F ; 0x12
-.BYTE $3F ; 0x13
-.BYTE $3F ; 0x14
-.BYTE $3F ; 0x15
-.BYTE $3F ; 0x16
-.BYTE $3F ; 0x17
-.BYTE $3F ; 0x18
-.BYTE $3F ; 0x19
-.BYTE $3F ; 0x1a
-.BYTE $3F ; 0x1b
-.BYTE $3F ; 0x1c
-.BYTE $3F ; 0x1d
-.BYTE $3F ; 0x1e
-.BYTE $3F ; 0x1f
+.BYTE $FF ; 0x0 
+.BYTE $FF ; 0x1
+.BYTE $FF ; 0x2
+.BYTE $FF ; 0x3
+.BYTE $FF ; 0x4
+.BYTE $FF ; 0x5
+.BYTE $FF ; 0x6
+.BYTE $FF ; 0x7
+.BYTE $FF ; 0x8
+.BYTE $FF ; 0x9
+.BYTE $FF ; 0xa
+.BYTE $FF ; 0xb
+.BYTE $FF ; 0xc
+.BYTE $FF ; 0xd
+.BYTE $FF ; 0xe
+.BYTE $FF ; 0xf
+.BYTE $FF ; 0x10
+.BYTE $FF ; 0x11
+.BYTE $FF ; 0x12
+.BYTE $FF ; 0x13
+.BYTE $FF ; 0x14
+.BYTE $FF ; 0x15
+.BYTE $FF ; 0x16
+.BYTE $FF ; 0x17
+.BYTE $FF ; 0x18
+.BYTE $FF ; 0x19
+.BYTE $FF ; 0x1a
+.BYTE $FF ; 0x1b
+.BYTE $FF ; 0x1c
+.BYTE $FF ; 0x1d
+.BYTE $FF ; 0x1e
+.BYTE $FF ; 0x1f
 .BYTE $3F ; 0x20
 .BYTE $24 ; 0x21
 .BYTE $2D ; 0x22

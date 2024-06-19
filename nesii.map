@@ -7,7 +7,7 @@ bios.o:
 monitor.o:
     CODE_MAIN         Offs=001153  Size=000145  Align=00001  Fill=0000
 char_io.o:
-    CODE_MAIN         Offs=001298  Size=00012E  Align=00001  Fill=0000
+    CODE_MAIN         Offs=001298  Size=000130  Align=00001  Fill=0000
     KEY_LUT           Offs=000000  Size=000030  Align=00001  Fill=0000
     CHR_LUT           Offs=000000  Size=00007F  Align=00001  Fill=0000
 floppy_rom.o:
@@ -18,7 +18,7 @@ Segment list:
 Name                   Start     End    Size  Align
 ----------------------------------------------------
 BLANK_AREA            000000  00C5FF  00C600  00001
-CODE_MAIN             00E000  00F3C5  0013C6  00001
+CODE_MAIN             00E000  00F3C7  0013C8  00001
 KEY_LUT               00F400  00F42F  000030  00001
 CHR_LUT               00F480  00F4FE  00007F  00001
 VECTORS               00FFFA  00FFFF  000006  00001
