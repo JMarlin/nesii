@@ -205,7 +205,7 @@ DO_SCREEN_SCROLL:
     LDA SCREEN_ADDR
     AND #$E0
     STA $2006
-    LDX #$40
+    LDX #$20
     LDA #$3F
 LINE_CLEAR_TOP:
     STA $2007
