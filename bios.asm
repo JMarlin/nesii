@@ -200,11 +200,71 @@ TILE_LOAD_LOOP:
     LDA #$00
     STA $4000
 
-JMP HALT
-
 .GLOBAL init
-HALT:
+
+STACK         =    $0100  
+TWOS_BUFFER   =     $0300    ;holds the 2-bit chunks
+CONV_TAB      =     $0356   ;6+2 conversion table
+BOOT1         =     $0800   ;buffer for next stage of loader
+IWM_PH0_OFF   =     $c080             ;stepper motor control
+IWM_PH0_ON    =     $c081             ;stepper motor control
+IWM_MOTOR_ON  =     $c089             ;starts drive spinning
+IWM_MOTOR_OFF =     $c088
+IWM_SEL_DRIVE_1 =   $c08a             ;selects drive 1
+IWM_Q6_OFF    =     $c08c             ;read
+IWM_Q7_OFF    =     $c08e             ;WP sense/read
+MON_WAIT      =     $fca8             ;delay for (26 + 27*Acc + 5*(Acc*Acc))/2 cycles
+MON_IORTS     =     $ff58             ;JSR here to find out where one is
+
+lda #'X'
+.GLOBAL PRNTCHR
+jsr PRNTCHR
+
+
+ldx     #$60
+lda     IWM_Q7_OFF,x
+lda     IWM_Q6_OFF,x
+lda     IWM_SEL_DRIVE_1,x
+lda     IWM_MOTOR_ON,x
+
+ReadSector:   clc
+ReadSector_C: php
+rdbyte1:      lda IWM_Q6_OFF,x
+              bpl rdbyte1
+check_d5:     eor #$d5
+              bne rdbyte1
+              nop
+              nop
+              nop
+rdbyte2:      lda IWM_Q6_OFF,x
+              bpl rdbyte2
+              cmp #$aa
+              bne check_d5
+              nop
+              nop
+              nop
+              nop
+rdbyte3:      lda IWM_Q6_OFF,x
+              bpl rdbyte3
+              cmp #$96
+              beq FoundAddress
+              plp
+              bcc ReadSector
+              eor #$ad
+              beq FoundData
+              bne ReadSector
+
+FoundAddress:
+    beq DiskTestDone
+
+FoundData:
+    beq ReadSector
+
+DiskTestDone:
+    lda IWM_MOTOR_OFF,x
+
     JMP init
+HALT:
     JMP HALT
 
 IRQ_BRK_HANDLE:
