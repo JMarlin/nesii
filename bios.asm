@@ -216,6 +216,9 @@ IWM_Q7_OFF    =     $c08e             ;WP sense/read
 MON_WAIT      =     $fca8             ;delay for (26 + 27*Acc + 5*(Acc*Acc))/2 cycles
 MON_IORTS     =     $ff58             ;JSR here to find out where one is
 
+found_track = $40
+bits = $3c
+
 lda #'X'
 .GLOBAL PRNTCHR
 jsr PRNTCHR
@@ -236,10 +239,12 @@ check_d5:     eor #$d5
               nop
               nop
               nop
+              nop
 rdbyte2:      lda IWM_Q6_OFF,x
               bpl rdbyte2
               cmp #$aa
               bne check_d5
+              nop
               nop
               nop
               nop
@@ -255,7 +260,36 @@ rdbyte3:      lda IWM_Q6_OFF,x
               bne ReadSector
 
 FoundAddress:
-    beq DiskTestDone
+    ldy #$03
+hdr_loop:
+    sta found_track
+    nop
+    nop
+    nop
+    nop
+adr_hdr_rdbyte1:
+    lda IWM_Q6_OFF,x
+    bpl adr_hdr_rdbyte1
+    rol A
+    sta bits
+    nop
+    nop
+    nop
+    nop
+adr_hdr_rdbyte2:
+    lda IWM_Q6_OFF,x
+    bpl adr_hdr_rdbyte2
+    and bits
+    dey
+    bne hdr_loop
+    plp
+    cmp sector
+    bne ReadSector
+    lda found_track
+    cmp track
+    bne ReadSector
+    bcs ReadSector_C
+JMP init
 
 FoundData:
     beq ReadSector
