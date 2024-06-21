@@ -422,7 +422,9 @@ decode_loop:
     bne     decode_loop
 
 DiskTestDone:
-    lda IWM_MOTOR_OFF,x
+    lda $C0F8
+
+    JMP BOOT1
 
     JMP init
 HALT:
