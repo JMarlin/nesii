@@ -2,6 +2,7 @@
 .SEGMENT "CODE_MAIN"
 .INCLUDE "char_io.inc"
 .INCLUDE "monitor.inc"
+
 ENTRY:
 ;Turn off interrupts and decimal mode
     SEI
@@ -221,9 +222,11 @@ sector        =    $3d       ;sector to read
 found_track   =    $40       ;track found
 track         =    $41       ;track to read
 
-lda #'X'
-.GLOBAL PRNTCHR
-jsr PRNTCHR
+lda #<BOOT_MSG
+sta $03
+lda #>BOOT_MSG
+sta $04
+jsr PRINTSTR
 
 ;Specify load from track 0, sector 0
 lda #$00
@@ -442,6 +445,8 @@ MON_TOP:
     LDA #$00
     RTS
     
+BOOT_MSG:
+    .ASCIIZ "LOADING..."
 
 IRQ_BRK_HANDLE:
     RTI
