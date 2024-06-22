@@ -1,0 +1,21 @@
+
+Switch A
+MODE I                    | MODE II
+--------------------------+--------------------------
+8000-BFFF: SRAM 8000-BFFF | SRAM C000-BFFF
+
+Switch B
+MODE I                    | MODE II
+--------------------------+--------------------------
+C000-CFFF: SLOT           | SRAM C000-CFFF
+D000-DFFF: SWITCHES       | SRAM D000-DFFF
+E000-FFFF: ROM            | SRAM E000-FFFF
+
+Game boot procedure:
+  1. Read 8k chr data from floppy and store to CHRAM
+  2. Read 16k prg data from floppy and store to 8000-BFFF
+  3. Set Switch A
+  4. Read 16k prg data from floppy and store to 8000-BFFF
+  5. Clear Switch A
+  6. Write program to NES RAM to set Switch B and jump indirect to (FFFC) / reset
+  7. Jump to program in NES RAM
