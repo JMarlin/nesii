@@ -1,41 +1,83 @@
-Name       NESII_MAPPER;
-Partno     NESII_MAPPER;
-Date       08/28/23;
-Revision   01;
-Designer   track_zero;
-Company    Makaira;
-Device     g16v8ma;
-
-/** Inputs **/ 
+Name       NESII_MAPPER;
+
+Partno     NESII_MAPPER;
+
+Date       08/28/23;
+
+Revision   01;
+
+Designer   track_zero;
+
+Company    Makaira;
+
+Device     g16v8ma;
+
+
+
+/** Inputs **/ 
+
 PIN    1  = CPU_RWB;
-PIN    2  = CA8;
-PIN    3  = CA9;
-PIN    4  = CA10;
-PIN    5  = CA11;
+PIN    2  = SW_A;
+PIN    3  = SW_B;
+PIN    4  = VRAM_MIRROR_IN_A;
+PIN    5  = VRAM_MIRROR_IN_B; 
 PIN    6  = CA12;
 PIN    7  = CA13;
 PIN    8  = CA14;
 PIN    9  = M2;
-PIN    11 = ROMSELB;
-
-/** Outputs **/
-PIN   12 = AII_IOSELB; 
+PIN    11 = ROMSELB;
+
+/*
+ Switch Modes:
+ 00 - RAM A | Peripherals | Vert mirror
+ 01 - RAM B | Peripherals | Vert mirror
+ 10 - RAM A | RAM B | Vert mirror
+ 11 - RAM A | RAM B | Horiz mirror
+*/
+
+/** Outputs **/
+
+PIN    12 = 0b1; 
 PIN    13 = AII_DEVSELB;
-PIN    14 = AII_IOSTROBEB;
-PIN    15 = DBG_RDB;
-PIN    16 = DBG_WRB;
+PIN    14 = VRAM_MIRROR_OUT;
+PIN    15 = SWITCH_CLK;
+PIN    16 = PRG_RAM_A14;
 PIN    17 = CPU_WRB;
 PIN    18 = PRG_RAM_CEB;
-PIN    19 = BIOS_ROM_CEB;
-
+PIN    19 = BIOS_ROM_CEB;
+
 /** Logic Equations **/
-AII_DEVSELB = ROMSELB # !CA14 # CA13 # CA12 # CA11 # CA10 # CA9;
-AII_IOSELB = ROMSELB # !CA14 # CA13 # CA12 # CA11 # !CA10 # !CA9;
-AII_IOSTROBEB = ROMSELB # !CA14 # CA13 # CA12 # !CA11;
-DBG_RDB = ROMSELB # !CPU_RWB # CA14 # CA13 # CA12 # CA11 # CA10;
-DBG_WRB = ROMSELB # CPU_RWB # CA14 # CA13 # CA12 # CA11 # CA10;
+
+/* Dev select is triggered at 0xCXXX unless Switch B is on */
+AII_DEVSELB =
+    (SW_B)
+  # (ROMSELB # !CA14 # CA13 # CA12);
+
+/* If both switches are on, MIRRORING_A is passed through. In all other cases, MIRRORING B is */
+VRAM_MIRROR_OUT =
+    (( (SW_B & SW_A)) & VRAM_MIRROR_IN_A)
+  # ((!(SW_B & SW_A)) & VRAM_MIRROR_IN_B);
+
+/* If Switch B is not set, Clock the data bus into Switch A and Switch B on a write to 0xDXXX */ 
+SWITCH_CLK =
+    (!SW_B) & (!CPU_RWB) & (!ROMSELB) & CA14 & (!CA13) & CA12;
+
+/* A14 on the program RAM is 
+   - 1 when the switches are 0b01
+   - CA14 in all other cases */
+PRG_RAM_A14 = 
+   ( ((!SW_B) & (SW_A))       )
+ # (!((!SW_B) & (SW_A)) & CA14);
+
 CPU_WRB = !CPU_RWB;
-PRG_RAM_CEB = ROMSELB # CA14 # (!CA13 & !CA12 & !CA11 & !CA10 & !CA9);
-BIOS_ROM_CEB = ROMSELB # !CA14 # !CA13;
-
-
+
+/* RAM is selected if we're in the low half of the cart or Switch B is enabled */
+PRG_RAM_CEB =
+    ROMSELB    # (!SW_B & CA14);
+
+BIOS_ROM_CEB = ROMSELB # !CA14 # !CA13; /* TODO: change based on switch */
+
+
+
+
+
