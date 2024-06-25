@@ -19,8 +19,8 @@ Device     g16v8ma;
 PIN    1  = CPU_RWB;
 PIN    2  = SW_A;
 PIN    3  = SW_B;
-PIN    4  = VRAM_MIRROR_IN_A;
-PIN    5  = VRAM_MIRROR_IN_B; 
+PIN    4  = VRAM_MIRROR_IN_B;
+PIN    5  = VRAM_MIRROR_IN_A; 
 PIN    6  = CA12;
 PIN    7  = CA13;
 PIN    8  = CA14;
@@ -37,7 +37,7 @@ PIN    11 = ROMSELB;
 
 /** Outputs **/
 
-PIN    12 = 0b1; 
+PIN    12 = UNUSED; 
 PIN    13 = AII_DEVSELB;
 PIN    14 = VRAM_MIRROR_OUT;
 PIN    15 = SWITCH_CLK;
@@ -48,19 +48,21 @@ PIN    19 = BIOS_ROM_CEB;
 
 /** Logic Equations **/
 
+UNUSED = 'b'1;
+
 /* Dev select is triggered at 0xCXXX unless Switch B is on */
 AII_DEVSELB =
     (SW_B)
   # (ROMSELB # !CA14 # CA13 # CA12);
 
 /* If both switches are on, MIRRORING_A is passed through. In all other cases, MIRRORING B is */
-VRAM_MIRROR_OUT =
+VRAM_MIRROR_OUT = 
     (( (SW_B & SW_A)) & VRAM_MIRROR_IN_A)
-  # ((!(SW_B & SW_A)) & VRAM_MIRROR_IN_B);
+  # ((!(SW_B & SW_A)) & VRAM_MIRROR_IN_B); 
 
 /* If Switch B is not set, Clock the data bus into Switch A and Switch B on a write to 0xDXXX */ 
-SWITCH_CLK =
-    (!SW_B) & (!CPU_RWB) & (!ROMSELB) & CA14 & (!CA13) & CA12;
+SWITCH_CLK = 
+    (!SW_B) & (!CPU_RWB) & (!ROMSELB) & (!M2) & CA14 & (!CA13) & CA12; 
 
 /* A14 on the program RAM is 
    - 1 when the switches are 0b01
@@ -72,10 +74,11 @@ PRG_RAM_A14 =
 CPU_WRB = !CPU_RWB;
 
 /* RAM is selected if we're in the low half of the cart or Switch B is enabled */
-PRG_RAM_CEB =
-    ROMSELB    # (!SW_B & CA14);
+PRG_RAM_CEB = 
+    ROMSELB    # (!SW_B & CA14); 
 
-BIOS_ROM_CEB = ROMSELB # !CA14 # !CA13; /* TODO: change based on switch */
+/* ROM is selected at 0xEXXX - 0xFXXX if switch B is off */
+BIOS_ROM_CEB = ROMSELB # !CA14 # !CA13 # SW_B;
 
 
 

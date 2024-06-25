@@ -41,7 +41,7 @@ RAWF=139
 init_apu:
         ; Init $4000-4013
         ldy #$13
-@loop:  lda @regs,y
+@loop:  lda regs,y
         sta $4000,y
         dey
         bpl @loop
@@ -59,17 +59,6 @@ init_apu:
         sta $4003
         lda #%10111111
         sta $4000
-
-        JMP moar
-   
-@regs:
-        .byte $30,$08,$00,$00
-        .byte $30,$08,$00,$00
-        .byte $80,$00,$00,$00
-        .byte $30,$00,$00,$00
-        .byte $00,$00,$00,$00
-
-moar:
 
 ;Set background palette values
 ;Universal background = black
@@ -304,7 +293,6 @@ seek_loop:
     lda     #>BOOT1           ;write the output here
     sta     data_ptr+1
 
-
 ReadSector:   clc
 ReadSector_C: php
 rdbyte1:      lda IWM_Q6_OFF,x
@@ -333,7 +321,6 @@ rdbyte3:      lda IWM_Q6_OFF,x
               bne ReadSector
 
 FoundAddress:
-
     ldy #$03
 hdr_loop:
     sta found_track
@@ -392,8 +379,6 @@ sixes_rdbyte2:
     nop
     nop
     nop
-    ;nop
-    ;nop ;Possibly here is good
     bne read_sixes_loop
 
 checksum_rdbyte3:
@@ -427,7 +412,7 @@ decode_loop:
 DiskTestDone:
     lda $C0F8
 
-    JMP BOOT1
+    ;JMP BOOT1
 
     JMP init
 HALT:
@@ -450,6 +435,13 @@ BOOT_MSG:
 
 IRQ_BRK_HANDLE:
     RTI
+   
+regs:
+        .byte $30,$08,$00,$00
+        .byte $30,$08,$00,$00
+        .byte $80,$00,$00,$00
+        .byte $30,$00,$00,$00
+        .byte $00,$00,$00,$00
 
 CHAR_TILES:
     .incbin "font.chr"

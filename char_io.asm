@@ -274,8 +274,8 @@ KEY_LUT:
 .BYTE '5'
 .BYTE $00
 .BYTE '/'
-.BYTE '>'
-.BYTE '<'
+.BYTE '.'
+.BYTE ','
 .BYTE 'M'
 .BYTE 'N'
 .BYTE '+'
