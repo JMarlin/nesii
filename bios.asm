@@ -198,6 +198,8 @@ CONV_TAB        = $0356   ;6+2 conversion table
 BOOT1           = $0400   ;buffer for next stage of loader
 IWM_PH0_OFF     = $c080             ;stepper motor control
 IWM_PH0_ON      = $c081             ;stepper motor control
+IWM_PH2_OFF     = $c084
+IWM_PH2_ON      = $c085
 IWM_MOTOR_ON    = $c089             ;starts drive spinning
 IWM_MOTOR_OFF   = $c088
 IWM_SEL_DRIVE_1 = $c08a             ;selects drive 1
@@ -212,7 +214,7 @@ bits            = $3c       ;temp storage for bit manipulation
 sector          = $3d       ;sector to read
 found_track     = $40       ;track found
 track           = $41       ;track to read
-cur_half_track  = $42
+cur_track  = $42
 cur_sector = $43
 
 lda #<BOOT_MSG
@@ -280,6 +282,7 @@ seek_loop:
     jsr     MON_WAIT          ;wait 19664 cycles
     dey                       ;next phase
     bpl     seek_loop
+    lda     IWM_PH0_OFF
 
     jsr boot_game
     jmp init
@@ -338,8 +341,11 @@ adr_hdr_rdbyte1:
     bne ReadSector
     lda found_track
     cmp track
-    bne ReadSector
+    bne TEST_mon ;ReadSector
     bcs ReadSector_C
+
+TEST_mon:
+    jmp init
 
 FoundData:
     ldy #86
@@ -423,31 +429,32 @@ MON_TOP:
     RTS
 
 step_track:
-    lda     cur_half_track
+    lda     cur_track
+    and     #$01
     asl     A
-    and     #$03
     asl     A
-    ora     #$60
+    ora     #$62
     tax
     lda     IWM_PH0_ON,x      ;turn on phase 0, 1, 2, or 3
     lda     #86
     jsr     MON_WAIT          ;wait 19664 cycles
     lda     IWM_PH0_OFF,x     ;turn phase N off
+    inx
+    inx
     txa
-    ora     #$02
+    and     #$F7
     tax
     lda     IWM_PH0_ON,x
     lda     #86
     jsr     MON_WAIT
     lda     IWM_PH0_OFF,x
-    inc     cur_half_track
+    inc     cur_track
     rts
 
 load_next_sector:
     lda     cur_sector
     sta     sector            
-    lda     cur_half_track
-    lsr     A
+    lda     cur_track
     sta     track
     jsr     ReadSector
     inc     cur_sector
@@ -456,7 +463,6 @@ load_next_sector:
     bne     next_sector_done
     lda     #$00
     sta     cur_sector
-    jsr     step_track
     jsr     step_track
 next_sector_done:
     rts
@@ -484,10 +490,7 @@ next_sector_16k:
     jsr load_next_sector
     inc data_ptr+1
     lda data_ptr+1
-    cmp #$9F ;HERE - loading up to 0x9E00 of the SRAM works fine, but the transition to 0x9F00 fails completely 
-             ;       this is presumably because of issues proceeding to the next track (A0 would be the start of
-             ;       the next track if we weren't offset by one due to already having read the boot sector)
-             ;       0x8F00 is the transition from track 0 to track 1, and that works seemingly fine
+    cmp #$C0
     bne next_sector_16k
     rts
 
@@ -495,17 +498,15 @@ next_sector_16k:
 ;                in DOS 3.3 format, because apparently ADT skews them when copying onto the disk
 boot_game:
     ;Make sure we're reset to the first sector
-    jsr     step_track
     lda #$00
     sta cur_sector
-    sta cur_half_track
+    sta cur_track
 
     ;Read boot sector into NES RAM (ultimately, that's where the rest of this code should go too)
     jsr load_boot_sector
 
     ;Read 8 tracks of PRG data into low-mapped low cart RAM
     jsr load_prg_16k
-    rts
 
     ;Switch low cart RAM mapping
     lda #$02
@@ -513,6 +514,8 @@ boot_game:
 
     ;Read 8 more tracks of PRG data into low-mapped high cart RAM
     jsr load_prg_16k
+    lda IWM_MOTOR_OFF
+    rts
 
     ;Read 2 tracks of CHR data and transfer it into CHR-RAM
     jsr load_chr_data
