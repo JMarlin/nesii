@@ -175,14 +175,6 @@ TILE_LOAD_LOOP:
     LDA #$00
     STA IS_SCROLLING
 
-;Indicate that we haven't yet clocked in any bits from the keyboard
-    JSR INITKEYBOARD
-    LDA #$FF
-    STA LAST_KB_BIT
-    LDA #$00
-    STA CURRENT_KB_COL
-    STA CURRENT_KB_ROW
-
 ;Enable rendering
     LDA #$0E
     STA $2001
@@ -341,11 +333,8 @@ adr_hdr_rdbyte1:
     bne ReadSector
     lda found_track
     cmp track
-    bne TEST_mon ;ReadSector
+    bne ReadSector
     bcs ReadSector_C
-
-TEST_mon:
-    jmp init
 
 FoundData:
     ldy #86
@@ -418,7 +407,10 @@ HALT:
 
 MON_WAIT:
     TYA
-    LDY #$02
+    LDY #$02 ;NOTE: We do this twice because of the possibility
+             ;that we're coming into vblank JUST as we enter this
+             ;function and therefore might not end up waiting
+             ;any time at all
 MON_TOP:
     BIT $2002
     BPL MON_TOP
@@ -428,6 +420,8 @@ MON_TOP:
     LDA #$00
     RTS
 
+;NOTE: When the drive is initialized, we are aligned with phase-0
+;      Therefore, we need to step to the next ODD numbered step FIRST
 step_track:
     lda     cur_track
     and     #$01
@@ -475,10 +469,55 @@ load_boot_sector:
     jsr     load_next_sector
     rts
 
-target_page = $44
+chr_sector_count = $44
 
 load_chr_data:
-    ;TODO
+    ;Need to load 8k of CHR data
+    ;Do it one sector at a time
+
+    ;Turn off rendering
+    lda #$00
+    sta $2001
+
+    ;Initialize sector counter and buffer target address
+    lda #$00
+    sta chr_sector_count
+
+    ;Initialize PPU starting write address
+    lda #$00
+    sta $2006
+    sta $2006
+
+next_chr_sector:
+    ;Probably redundant, initialize target CHR buffer address
+    lda #$00
+    sta data_ptr
+    lda #$05
+    sta data_ptr+1
+
+    ;Read next sector into CHR buffer
+    jsr load_next_sector
+
+    ;Copy CHR buffer into CHR RAM
+    ldx #$00
+next_chr_byte:
+    lda $0500,X
+    sta $2007
+    inx
+    bne next_chr_byte
+
+    ;Increment sector counter 
+    inc chr_sector_count
+
+    ;Do next sector if counter is not at 0x20
+    lda chr_sector_count
+    cmp #$20
+    bne next_chr_sector
+
+    ;Turn on rendering
+    lda #$0E
+    sta $2001
+
     rts
 
 load_prg_16k:
@@ -514,14 +553,12 @@ boot_game:
 
     ;Read 8 more tracks of PRG data into low-mapped high cart RAM
     jsr load_prg_16k
-    lda IWM_MOTOR_OFF
-    rts
 
     ;Read 2 tracks of CHR data and transfer it into CHR-RAM
     jsr load_chr_data
 
     ;Stop the disk drive
-    lda $C0F8
+    lda IWM_MOTOR_OFF
 
     ;Jump to the boot code
     jmp BOOT1
