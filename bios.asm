@@ -192,24 +192,28 @@ TILE_LOAD_LOOP:
 
 .GLOBAL init
 
-STACK         =    $0100  
-TWOS_BUFFER   =     $0300    ;holds the 2-bit chunks
-CONV_TAB      =     $0356   ;6+2 conversion table
-BOOT1         =     $0400   ;buffer for next stage of loader
-IWM_PH0_OFF   =     $c080             ;stepper motor control
-IWM_PH0_ON    =     $c081             ;stepper motor control
-IWM_MOTOR_ON  =     $c089             ;starts drive spinning
-IWM_MOTOR_OFF =     $c088
-IWM_SEL_DRIVE_1 =   $c08a             ;selects drive 1
-IWM_Q6_OFF    =     $c08c             ;read
-IWM_Q7_OFF    =     $c08e             ;WP sense/read
+STACK           = $0100  
+TWOS_BUFFER     = $0300    ;holds the 2-bit chunks
+CONV_TAB        = $0356   ;6+2 conversion table
+BOOT1           = $0400   ;buffer for next stage of loader
+IWM_PH0_OFF     = $c080             ;stepper motor control
+IWM_PH0_ON      = $c081             ;stepper motor control
+IWM_MOTOR_ON    = $c089             ;starts drive spinning
+IWM_MOTOR_OFF   = $c088
+IWM_SEL_DRIVE_1 = $c08a             ;selects drive 1
+IWM_Q6_OFF      = $c08c             ;read
+IWM_Q7_OFF      = $c08e             ;WP sense/read
 
-data_ptr      =    $26       ;pointer to BOOT1 data buffer
-slot_index    =    $2b       ;slot number << 4
-bits          =    $3c       ;temp storage for bit manipulation
-sector        =    $3d       ;sector to read
-found_track   =    $40       ;track found
-track         =    $41       ;track to read
+CART_SWITCHES   = $d000
+
+data_ptr        = $26       ;pointer to BOOT1 data buffer
+slot_index      = $2b       ;slot number << 4
+bits            = $3c       ;temp storage for bit manipulation
+sector          = $3d       ;sector to read
+found_track     = $40       ;track found
+track           = $41       ;track to read
+cur_half_track  = $42
+cur_sector = $43
 
 lda #<BOOT_MSG
 sta $03
@@ -251,16 +255,7 @@ check_dub0:
 reject:
     inx                       ;try next candidate
     bpl     CreateDecTabLoop
-; 
-; Prep the hardware.
-; 
-    ;jsr     MON_IORTS         ;known RTS
-    ;tsx
-    ;lda     STACK,x           ;pull hi byte of our address off stack
-    ;asl     A                 ;(we assume no interrupts have hit)
-    ;asl     A                 ;multiply by 16
-    ;asl     A
-    ;asl     A
+
     lda #$60
     sta     slot_index        ;keep this around
     tax
@@ -286,12 +281,8 @@ seek_loop:
     dey                       ;next phase
     bpl     seek_loop
 
-    lda #$00
-    sta     data_ptr          ;A-reg is 0 when MON_WAIT returns
-    sta     sector            ;so we're looking for T=0 S=0
-    sta     track
-    lda     #>BOOT1           ;write the output here
-    sta     data_ptr+1
+    jsr boot_game
+    jmp init
 
 ReadSector:   clc
 ReadSector_C: php
@@ -409,8 +400,9 @@ decode_loop:
     iny
     bne     decode_loop
 
+    rts
+
 DiskTestDone:
-    lda $C0F8
 
     ;JMP BOOT1
 
@@ -420,7 +412,7 @@ HALT:
 
 MON_WAIT:
     TYA
-    LDY #$01
+    LDY #$02
 MON_TOP:
     BIT $2002
     BPL MON_TOP
@@ -429,6 +421,109 @@ MON_TOP:
     TAY
     LDA #$00
     RTS
+
+step_track:
+    lda     cur_half_track
+    asl     A
+    and     #$03
+    asl     A
+    ora     #$60
+    tax
+    lda     IWM_PH0_ON,x      ;turn on phase 0, 1, 2, or 3
+    lda     #86
+    jsr     MON_WAIT          ;wait 19664 cycles
+    lda     IWM_PH0_OFF,x     ;turn phase N off
+    txa
+    ora     #$02
+    tax
+    lda     IWM_PH0_ON,x
+    lda     #86
+    jsr     MON_WAIT
+    lda     IWM_PH0_OFF,x
+    inc     cur_half_track
+    rts
+
+load_next_sector:
+    lda     cur_sector
+    sta     sector            
+    lda     cur_half_track
+    lsr     A
+    sta     track
+    jsr     ReadSector
+    inc     cur_sector
+    lda     cur_sector
+    cmp     #$10
+    bne     next_sector_done
+    lda     #$00
+    sta     cur_sector
+    jsr     step_track
+    jsr     step_track
+next_sector_done:
+    rts
+
+load_boot_sector:
+    lda     #$00
+    sta     data_ptr          ;Store page-aligned
+    lda     #>BOOT1           ;Target is the NES RAM boot area
+    sta     data_ptr+1
+    jsr     load_next_sector
+    rts
+
+target_page = $44
+
+load_chr_data:
+    ;TODO
+    rts
+
+load_prg_16k:
+    lda #$00
+    sta data_ptr
+    lda #$80
+    sta data_ptr+1
+next_sector_16k:
+    jsr load_next_sector
+    inc data_ptr+1
+    lda data_ptr+1
+    cmp #$9F ;HERE - loading up to 0x9E00 of the SRAM works fine, but the transition to 0x9F00 fails completely 
+             ;       this is presumably because of issues proceeding to the next track (A0 would be the start of
+             ;       the next track if we weren't offset by one due to already having read the boot sector)
+             ;       0x8F00 is the transition from track 0 to track 1, and that works seemingly fine
+    bne next_sector_16k
+    rts
+
+;IMPORTANT NOTE: When making the disk image for this, you'll have to skew the sector data
+;                in DOS 3.3 format, because apparently ADT skews them when copying onto the disk
+boot_game:
+    ;Make sure we're reset to the first sector
+    jsr     step_track
+    lda #$00
+    sta cur_sector
+    sta cur_half_track
+
+    ;Read boot sector into NES RAM (ultimately, that's where the rest of this code should go too)
+    jsr load_boot_sector
+
+    ;Read 8 tracks of PRG data into low-mapped low cart RAM
+    jsr load_prg_16k
+    rts
+
+    ;Switch low cart RAM mapping
+    lda #$02
+    sta CART_SWITCHES
+
+    ;Read 8 more tracks of PRG data into low-mapped high cart RAM
+    jsr load_prg_16k
+
+    ;Read 2 tracks of CHR data and transfer it into CHR-RAM
+    jsr load_chr_data
+
+    ;Stop the disk drive
+    lda $C0F8
+
+    ;Jump to the boot code
+    jmp BOOT1
+
+    rts
     
 BOOT_MSG:
     .ASCIIZ "LOADING..."
