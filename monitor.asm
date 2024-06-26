@@ -74,8 +74,11 @@ DUMP_BYTE:
        INC ADRESS+1
        JMP M2
 
-.GLOBAL init
+.GLOBAL load_next_sector
+.word load_next_sector
+
 init:
+.GLOBAL init
 
 ;Indicate that we haven't yet clocked in any bits from the keyboard
     JSR INITKEYBOARD
