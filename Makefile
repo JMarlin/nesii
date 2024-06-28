@@ -7,8 +7,11 @@ nesii.bin: link.cfg bios.o char_io.o floppy_rom.o monitor.o
 	ld65 -m nesii.map -o nesii.bin -C link.cfg bios.o monitor.o char_io.o floppy_rom.o
 	ld65 -o nesii.o -C link.cfg bios.o monitor.o char_io.o floppy_rom.o
 
-nos_bootsect.bin: nos_link.cfg nos_bootsect.o
-	ld65 -o nos_bootsect.bin -C nos_link.cfg nos_bootsect.o
+nos.dsk: nos.bin skew-dsk.py
+	./skew-dsk.py nos.bin nos.dsk
+
+nos.bin: nos_link.cfg nos_bootsect.o
+	ld65 -o nos.bin -C nos_link.cfg nos_bootsect.o
 
 bios.o: bios.asm
 	ca65 bios.asm
