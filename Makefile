@@ -26,4 +26,4 @@ floppy_rom.o: floppy_rom.asm
 	ca65 floppy_rom.asm
 
 nos_bootsect.o: nos_bootsect.asm
-	ca65 nos_bootsect.asm
+	ca65 -l nos_bootsect.lst nos_bootsect.asm

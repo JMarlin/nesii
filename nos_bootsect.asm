@@ -73,29 +73,27 @@ prompt_loop:
     lda #>PROMPT
     sta STRING_PTR+1
     jsr PRINTSTR
-    lda #$00
+    ldy #$00
+    sta TEXT_BUFFER
+    sty TEXT_INDEX
 type_loop:
-    jsr PRNTCHR
     jsr GETKEY
     cmp #$0D
     bne stash_character
-    ;TODO: Zero the end of the string and start comparing to the command list
-    ldy TEXT_INDEX
     lda #$00
+    ldy TEXT_INDEX
     sta TEXT_BUFFER,Y
-    ldy #$00
-    sta TEXT_INDEX
     jsr process_command
-    beq prompt_loop
+    clc
+    bcc prompt_loop
 stash_character:
     ldy TEXT_INDEX
     sta TEXT_BUFFER,Y
     iny
     sty TEXT_INDEX
+    jsr PRNTCHR
     clc
     bcc type_loop
-
-    jmp ENTER_MONITOR
 
 compare_cmd:
     ldy #$00
@@ -113,10 +111,9 @@ compare_cmd_no_match:
     rts
 
 process_command:
-    ldy #$00
-    sty CUR_CMD_INDEX
+    ldy #$FF
 next_command:
-    ldy CUR_CMD_INDEX
+    iny
     ;Load string ptr LSB
     lda COMMAND_TABLE,Y
     sta CMP_STRING
@@ -127,12 +124,13 @@ next_command:
     sta CMP_STRING+1
     sty CUR_CMD_INDEX
     jsr compare_cmd
+    ldy CUR_CMD_INDEX
     cmp #$00
     bne exec_cmd
     iny
     iny
-    bne next_command
-    beq process_command_no_match
+    clc
+    bcc next_command
 exec_cmd:
     iny
     lda COMMAND_TABLE,Y
@@ -142,11 +140,18 @@ exec_cmd:
     sta COMMAND_ADDRESS+1
     jmp (COMMAND_ADDRESS)
 process_command_no_match:
+    lda #<UNKNOWN_COMMAND_STR
+    sta STRING_PTR
+    lda #>UNKNOWN_COMMAND_STR
+    sta STRING_PTR+1
+    jsr PRINTSTR
     rts
 
 COMMAND_TABLE:
     .word HELLO_STR
     .word HELLO_CMD
+    .word MON_STR
+    .word MON_CMD
     .word $0000
 
 HELLO_CMD:
@@ -155,7 +160,10 @@ HELLO_CMD:
     lda #>HI_MESSAGE
     sta STRING_PTR+1
     jsr PRINTSTR
-    jmp prompt_loop
+    rts
+
+MON_CMD:
+    jmp ENTER_MONITOR
 
 MESSAGE_2:
     .byte "DONE", $0A, $0D
@@ -163,10 +171,17 @@ MESSAGE_2:
 
 PROMPT:
     .byte $0A, $0D
-    .byte "N] "
+    .byte "N] ", $00
+
+UNKNOWN_COMMAND_STR:
+    .byte $0A, $0D
+    .byte "UNKNOWN COMMAND", $00
 
 HI_MESSAGE:
     .byte $0A, $0D, "HI TO YOU!", $00
 
 HELLO_STR:
     .byte "HELLO", $00
+
+MON_STR:
+    .byte "MON", $00
