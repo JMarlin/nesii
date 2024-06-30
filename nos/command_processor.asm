@@ -1,63 +1,11 @@
-.segment "BOOT_INIT"
+.segment "CODE"
+.include "rom_constants.inc"
+.include "hello_command.inc"
+.include "mon_command.inc"
+.include "dir_command.inc"
 
-CART_SWITCHES    = $d000
-INITKEYBOARD     = $f427
-LOAD_NEXT_SECTOR = $e27f
-IWM_MOTOR_OFF    = $c088
-ENTER_MONITOR    = $f2e5
-PRINTSTR         = $f4f7
-PRNTCHR          = $f489
-GETKEY           = $f441
-STRING_PTR       = $03
-data_ptr         = $26
-TEXT_BUFFER      = $0400
-TEXT_INDEX       = $50
-CMP_STRING       = $51
-CUR_CMD_INDEX    = $53
-COMMAND_ADDRESS  = $54
-
-boot_sector_start:
-
-ldy #$00
-move_bootsect:
-    lda $0400,Y
-    sta $8000,Y
-    iny
-    bne move_bootsect
-
-jmp $800E ;This is new_entry at the new location
-
-new_entry:
-    lda #<MESSAGE
-    sta STRING_PTR
-    lda #>MESSAGE
-    sta STRING_PTR+1
-    jsr PRINTSTR
-
-load_boot_tracks:
-    lda #$00
-    sta data_ptr
-    lda #$81
-    sta data_ptr+1
-get_next_boot_track:
-    jsr LOAD_NEXT_SECTOR
-    inc data_ptr+1
-    lda data_ptr+1
-    cmp #$90
-    bne get_next_boot_track
-
-    jmp boot_tracks_start
-
-MESSAGE:
-    .byte $0A, $0D
-    .byte "READING NOS DATA..."
-    .byte $00
-
-.segment "BOOT_CODE"
-
-boot_tracks_start:
-
-    lda IWM_MOTOR_OFF
+.global command_processor_entry
+command_processor_entry:
 
     jsr INITKEYBOARD
 
@@ -68,11 +16,13 @@ boot_tracks_start:
     jsr PRINTSTR
 
 prompt_loop:
+
     lda #<PROMPT
     sta STRING_PTR
     lda #>PROMPT
     sta STRING_PTR+1
     jsr PRINTSTR
+
     ldy #$00
     sta TEXT_BUFFER
     sty TEXT_INDEX
@@ -148,22 +98,10 @@ process_command_no_match:
     rts
 
 COMMAND_TABLE:
-    .word HELLO_STR
-    .word HELLO_CMD
-    .word MON_STR
-    .word MON_CMD
+    .word HELLO_CMD_STR, HELLO_CMD_ENTRY
+    .word MON_CMD_STR,   MON_CMD_ENTRY
+    .word DIR_CMD_STR,   DIR_CMD_ENTRY
     .word $0000
-
-HELLO_CMD:
-    lda #<HI_MESSAGE
-    sta STRING_PTR
-    lda #>HI_MESSAGE
-    sta STRING_PTR+1
-    jsr PRINTSTR
-    rts
-
-MON_CMD:
-    jmp ENTER_MONITOR
 
 MESSAGE_2:
     .byte "DONE", $0A, $0D
@@ -176,12 +114,6 @@ PROMPT:
 UNKNOWN_COMMAND_STR:
     .byte $0A, $0D
     .byte "UNKNOWN COMMAND", $00
-
-HI_MESSAGE:
-    .byte $0A, $0D, "HI TO YOU!", $00
-
-HELLO_STR:
-    .byte "HELLO", $00
 
 MON_STR:
     .byte "MON", $00
