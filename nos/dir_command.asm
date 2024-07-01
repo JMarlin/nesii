@@ -36,6 +36,7 @@ motor_wait:
     sta data_ptr+1
     jsr read_sector
 
+    ldx #$60
     lda IWM_MOTOR_OFF,X
 
     jmp ENTER_MONITOR
