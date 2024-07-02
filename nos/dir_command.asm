@@ -26,6 +26,14 @@ motor_wait:
     lda #$11
     jsr floppy_seek
 
+    ;Test: seek it back to track 2
+    lda #$02
+    jsr floppy_seek
+
+    ;Test: finally go forward to the VTOC
+    lda #$11
+    jsr floppy_seek
+
     ;Read the VTOC (track 0x11, sector 0x0) into a buffer for examination
     lda #$00
     sta data_ptr

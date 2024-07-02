@@ -15,23 +15,36 @@ floppy_seek_top:
     ;If we are already at the requested track, nothing to do
     pla
     cmp current_track
+    pha
     beq floppy_seek_done
-    bcc floppy_seek_step_forward
+    bcc floppy_seek_step_back
+    jsr step_forward
+    clc
+    bcc floppy_seek_top
+floppy_seek_step_back:
     jsr step_back
     clc
-    bcc floppy_seek_continue
-floppy_seek_step_forward:
-    jsr step_forward
-floppy_seek_continue:
-    pha
-    clc
-    bcc floppy_seek
+    bcc floppy_seek_top
 
 floppy_seek_done:
+    pla
     rts
 
 
 step_forward:
+
+;TESTING
+    lda #<FORWARD_MESSAGE
+    sta STRING_PTR
+    lda #>FORWARD_MESSAGE
+    sta STRING_PTR+1
+    jsr PRINTSTR
+
+    inc current_track
+
+    rts
+;TESTING
+
     lda     current_track
     cmp     #$23
     beq     step_forward_done
@@ -57,6 +70,19 @@ step_forward_done:
 
 
 step_back:
+
+;TESTING
+    lda #<BACK_MESSAGE
+    sta STRING_PTR
+    lda #>BACK_MESSAGE
+    sta STRING_PTR+1
+    jsr PRINTSTR
+
+    dec current_track
+
+    rts
+;TESTING
+
     lda     current_track
     beq     step_back_done
     and     #$01
@@ -78,3 +104,9 @@ step_back:
     dec     current_track
 step_back_done:
     rts
+
+FORWARD_MESSAGE:
+    .byte "STEPPING FORWARD", $0A, $0D, $00
+
+BACK_MESSAGE:
+    .byte "STEPPING BACK", $0A, $0D, $00
