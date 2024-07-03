@@ -1,0 +1,2 @@
+.global HELLO_CMD_STR
+.global HELLO_CMD_ENTRY

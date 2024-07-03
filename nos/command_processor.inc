@@ -1,0 +1,1 @@
+.global command_processor_entry
