@@ -22,6 +22,11 @@ motor_wait:
     dex
     bne motor_wait
 
+    lda #$0A
+    jsr PRNTCHR
+    lda #$0D
+    jsr PRNTCHR
+
     ;Read the VTOC (track 0x11, sector 0x0) into a buffer for examination
     lda #$00
     sta data_ptr
@@ -46,11 +51,6 @@ dir_catalog_chain_next:
 
     lda #$0B
     sta data_ptr
-
-    lda #$0A
-    jsr PRNTCHR
-    lda #$0D
-    jsr PRNTCHR
 
 dir_entry_show:
     ldy #$00
