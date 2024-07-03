@@ -57,10 +57,6 @@ dir_entry_show:
     lda (data_ptr),Y
     beq dir_entry_show_next
 
-    lda data_ptr
-    clc
-    adc #$0E
-
 print_name:
     lda #$0A
     jsr PRNTCHR
@@ -70,7 +66,7 @@ print_name:
     jsr PRNTCHR
     lda #$20
     jsr PRNTCHR
-    ldy #$00
+    ldy #$03
 print_name_next_char:
     tya
     pha
@@ -78,7 +74,7 @@ print_name_next_char:
     and #$7F
     jsr PRNTCHR
     pla
-    cmp #29
+    cmp #$1A
     beq print_name_done
     tay
     iny
