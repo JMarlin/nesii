@@ -22,29 +22,76 @@ motor_wait:
     dex
     bne motor_wait
 
-    ;Seek the floppy to the VTOC/Catalog track
-    lda #$11
-    jsr floppy_seek
-
-    ;Test: seek it back to track 2
-    lda #$02
-    jsr floppy_seek
-
-    ;Test: finally go forward to the VTOC
-    lda #$11
-    jsr floppy_seek
-
     ;Read the VTOC (track 0x11, sector 0x0) into a buffer for examination
     lda #$00
     sta data_ptr
-    sta sector
-    lda current_track
-    sta track
     lda #$90
     sta data_ptr+1
-    ldx #$60
-    jsr read_sector
+    ldx #$11
+    lda #$00
+    jsr floppy_read
 
+dir_catalog_chain_next:
+    ;Read the next catalog sector
+    lda #$00
+    sta data_ptr
+    lda #$90
+    sta data_ptr+1
+    ldx $9001
+    beq dir_catalog_chain_done
+    lda $9002
+    jsr floppy_read
+
+    lda #$0B
+    sta data_ptr
+
+    lda #$0A
+    jsr PRNTCHR
+    lda #$0D
+    jsr PRNTCHR
+
+dir_entry_show:
+    ldy #$00
+    lda (data_ptr),Y
+    beq dir_entry_show_next
+
+    lda data_ptr
+    clc
+    adc #$0E
+
+print_name:
+    lda #$0A
+    jsr PRNTCHR
+    lda #$0D
+    jsr PRNTCHR
+    lda #$20
+    jsr PRNTCHR
+    lda #$20
+    jsr PRNTCHR
+    ldy #$00
+print_name_next_char:
+    tya
+    pha
+    lda (data_ptr),Y
+    and #$7F
+    jsr PRNTCHR
+    pla
+    cmp #29
+    beq print_name_done
+    tay
+    iny
+    bne print_name_next_char
+print_name_done:
+
+dir_entry_show_next:
+    lda data_ptr
+    clc
+    adc #$23
+    sta data_ptr
+    bne dir_entry_show
+    beq dir_catalog_chain_next
+
+dir_catalog_chain_done:
     ldx #$60
     lda IWM_MOTOR_OFF,X
 

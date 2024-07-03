@@ -7,6 +7,23 @@ floppy_init:
     lda IWM_MOTOR_OFF,X
     rts
 
+
+;Expects track number in X, sector number in A
+;data_ptr is the target it will read into
+.global floppy_read
+floppy_read:
+    pha
+    txa
+    jsr floppy_seek
+    tax
+    sta track
+    pla
+    sta sector
+    ldx #$60
+    jsr read_sector
+    rts
+
+
 .global floppy_seek
 floppy_seek:
     pha
