@@ -37,9 +37,11 @@ dir_catalog_chain_next:
     sta data_ptr
     lda #$90
     sta data_ptr+1
-    ldx $9001
+    lda $9001
     beq dir_catalog_chain_done
-    lda $9002
+    tax
+    ldy $9002
+    lda floppy_skew_table,Y
     jsr floppy_read
 
     lda #$0B
@@ -96,3 +98,6 @@ dir_catalog_chain_done:
     lda IWM_MOTOR_OFF,X
 
     rts
+
+floppy_skew_table:
+    .byte $00, $0d, $0b, $09, $07, $05, $03, $01, $0e, $0c, $0a, $08, $06, $04, $02, $0f
