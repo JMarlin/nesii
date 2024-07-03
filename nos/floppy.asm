@@ -11,7 +11,6 @@ floppy_init:
 floppy_seek:
     pha
 floppy_seek_top:
-
     ;If we are already at the requested track, nothing to do
     pla
     cmp current_track
@@ -30,21 +29,34 @@ floppy_seek_done:
     pla
     rts
 
+print_hex_byte:
+    pha
+    pha
+    lsr
+    lsr
+    lsr
+    lsr
+    jsr print_hex_nybble
+    pla
+    and #$0F
+    jsr print_hex_nybble
+    pla
+    rts
+
+print_hex_nybble:
+    pha
+    adc #$30
+    cmp #$3A
+    bcc print_hex_nybble_done
+    clc
+    adc #$07
+print_hex_nybble_done:
+    jsr PRNTCHR
+    pla
+    rts
+
 
 step_forward:
-
-;TESTING
-    lda #<FORWARD_MESSAGE
-    sta STRING_PTR
-    lda #>FORWARD_MESSAGE
-    sta STRING_PTR+1
-    jsr PRINTSTR
-
-    inc current_track
-
-    rts
-;TESTING
-
     lda     current_track
     cmp     #$23
     beq     step_forward_done
@@ -70,19 +82,6 @@ step_forward_done:
 
 
 step_back:
-
-;TESTING
-    lda #<BACK_MESSAGE
-    sta STRING_PTR
-    lda #>BACK_MESSAGE
-    sta STRING_PTR+1
-    jsr PRINTSTR
-
-    dec current_track
-
-    rts
-;TESTING
-
     lda     current_track
     beq     step_back_done
     and     #$01
@@ -104,9 +103,3 @@ step_back:
     dec     current_track
 step_back_done:
     rts
-
-FORWARD_MESSAGE:
-    .byte "STEPPING FORWARD", $0A, $0D, $00
-
-BACK_MESSAGE:
-    .byte "STEPPING BACK", $0A, $0D, $00
