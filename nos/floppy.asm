@@ -3,6 +3,32 @@
 
 .global floppy_init
 floppy_init:
+    jsr floppy_off
+    rts
+
+
+.global floppy_motor_wait
+floppy_motor_wait:
+    ldx #$30
+floppy_motor_wait_top:
+    txa
+    pha
+    jsr monitor_wait
+    pla
+    tax
+    dex
+    bne floppy_motor_wait_top
+
+
+.global floppy_on
+floppy_on:
+    ldx #$60
+    lda IWM_MOTOR_ON,X
+    rts
+
+
+.global floppy_off
+floppy_off:
     ldx #$60
     lda IWM_MOTOR_OFF,X
     rts

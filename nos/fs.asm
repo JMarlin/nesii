@@ -1,20 +1,19 @@
 .segment "CODE"
 .include "floppy.inc"
-.include "console.inc"
 
-.global DIR_CMD_STR
-DIR_CMD_STR: .asciiz "DIR"
 
-.global DIR_CMD_ENTRY
-DIR_CMD_ENTRY:
+.global fs_start_listing
+fs_start_listing:
 
     jsr floppy_on
     jsr floppy_motor_wait
 
-    lda #$0A
-    jsr console_printc
-    lda #$0D
-    jsr console_printc
+    rts
+
+;HERE - in progress
+;       my general goal is to pass some kind of
+;       value back to the caller that can be used
+;       to resume iterating the entries
 
     ;Read the VTOC (track 0x11, sector 0x0) into a buffer for examination
     lda #$00

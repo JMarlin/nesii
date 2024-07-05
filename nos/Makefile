@@ -3,8 +3,8 @@ all: nos.dsk
 nos.dsk: nos.bin ../skew-dsk.py
 	../skew-dsk.py nos.bin nos.dsk
 
-nos.bin: nos_link.cfg boot_sector.o command_processor.o hello_command.o mon_command.o dir_command.o floppy.o
-	ld65 -o nos.bin -C nos_link.cfg boot_sector.o command_processor.o hello_command.o mon_command.o dir_command.o floppy.o
+nos.bin: nos_link.cfg boot_sector.o command_processor.o hello_command.o mon_command.o dir_command.o floppy.o fs.o console.o
+	ld65 -o nos.bin -C nos_link.cfg boot_sector.o command_processor.o hello_command.o mon_command.o dir_command.o floppy.o fs.o console.o
 
 boot_sector.o: boot_sector.asm rom_constants.inc floppy.inc
 	ca65 boot_sector.asm
@@ -18,8 +18,14 @@ hello_command.o: hello_command.asm rom_constants.inc
 mon_command.o: mon_command.asm rom_constants.inc
 	ca65 mon_command.asm
 
-dir_command.o: dir_command.asm rom_constants.inc floppy.inc
+dir_command.o: dir_command.asm console.inc floppy.inc
 	ca65 dir_command.asm
 
 floppy.o: floppy.asm rom_constants.inc
 	ca65 floppy.asm
+
+fs.o: fs.asm floppy.inc
+	ca65 fs.asm
+
+console.o: console.asm rom_constants.inc
+	ca65 console.asm
