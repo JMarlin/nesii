@@ -1,5 +1,6 @@
 .segment "CODE"
 .include "floppy.inc"
+.include "console.inc"
 
 
 .global fs_start_listing

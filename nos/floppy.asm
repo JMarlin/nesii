@@ -94,7 +94,7 @@ print_hex_nybble:
     clc
     adc #$07
 print_hex_nybble_done:
-    jsr PRNTCHR
+    jsr prints
     pla
     rts
 

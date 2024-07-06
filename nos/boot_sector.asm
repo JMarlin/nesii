@@ -1,6 +1,7 @@
 .segment "BOOTSECT"
 .include "rom_constants.inc"
 .include "command_processor.inc"
+.include "../startup_interface.inc"
 .include "floppy.inc"
 
 boot_sector_start:
@@ -33,9 +34,7 @@ get_next_boot_track:
     cmp #$90
     bne get_next_boot_track
 
-    jsr floppy_init
-
-    jmp command_processor_entry
+    jmp system_startup
 
 MESSAGE:
     .byte $0A, $0D

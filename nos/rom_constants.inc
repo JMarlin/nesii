@@ -1,6 +1,13 @@
+prints           = $ffc0
+printc           = $ffc4
+init_keyboard    = $ffc8
+load_next_sector = $ffcc
+enter_monitor    = $ffd0
+read_sector      = $ffd4
+monitor_wait     = $ffd8
+getc             = $ffdc
+
 CART_SWITCHES    = $d000
-INITKEYBOARD     = $f427
-LOAD_NEXT_SECTOR = $e27f
 IWM_PH0_OFF      = $c080
 IWM_PH0_ON       = $c081
 IWM_PH2_OFF      = $c084
@@ -10,16 +17,11 @@ IWM_MOTOR_OFF    = $c088
 IWM_SEL_DRIVE_1  = $c08a
 IWM_Q6_OFF       = $c08c
 IWM_Q7_OFF       = $c08e
-ENTER_MONITOR    = $f2e5
-PRINTSTR         = $f4f7
-PRNTCHR          = $f489
-GETKEY           = $f441
+
 STRING_PTR       = $03
-read_sector      = $e19b
 data_ptr         = $26
 sector           = $3d
 track            = $41
-monitor_wait     = $e248
 TEXT_BUFFER      = $0400
 TEXT_INDEX       = $50
 CMP_STRING       = $51

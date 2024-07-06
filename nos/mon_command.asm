@@ -6,4 +6,4 @@ MON_CMD_STR: .asciiz "MON"
 
 .global MON_CMD_ENTRY
 MON_CMD_ENTRY:
-    jmp ENTER_MONITOR
+    jmp enter_monitor

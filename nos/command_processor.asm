@@ -3,17 +3,22 @@
 .include "hello_command.inc"
 .include "mon_command.inc"
 .include "dir_command.inc"
+.include "floppy.inc"
+
+.global system_startup
+system_startup:
+    jsr floppy_init
 
 .global command_processor_entry
 command_processor_entry:
 
-    jsr INITKEYBOARD
+    jsr init_keyboard
 
     lda #<MESSAGE_2
     sta STRING_PTR
     lda #>MESSAGE_2
     sta STRING_PTR+1
-    jsr PRINTSTR
+    jsr prints
 
 prompt_loop:
 
@@ -21,13 +26,13 @@ prompt_loop:
     sta STRING_PTR
     lda #>PROMPT
     sta STRING_PTR+1
-    jsr PRINTSTR
+    jsr prints
 
     ldy #$00
     sta TEXT_BUFFER
     sty TEXT_INDEX
 type_loop:
-    jsr GETKEY
+    jsr getc
     cmp #$0D
     bne stash_character
     lda #$00
@@ -41,7 +46,7 @@ stash_character:
     sta TEXT_BUFFER,Y
     iny
     sty TEXT_INDEX
-    jsr PRNTCHR
+    jsr printc
     clc
     bcc type_loop
 
@@ -94,7 +99,7 @@ process_command_no_match:
     sta STRING_PTR
     lda #>UNKNOWN_COMMAND_STR
     sta STRING_PTR+1
-    jsr PRINTSTR
+    jsr prints
     rts
 
 COMMAND_TABLE:

@@ -1,0 +1,1 @@
+.global system_startup

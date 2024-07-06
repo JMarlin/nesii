@@ -1,4 +1,5 @@
-.global console_init
-.global console_prints
-.global console_printc
-.global console_getc
+.include "rom_constants.inc"
+console_init   = init_keyboard
+console_prints = prints
+console_printc = printc
+console_getc   = getc

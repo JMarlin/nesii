@@ -1,4 +1,4 @@
-.SEGMENT "CODE_MAIN"
+.SEGMENT "CODE"
 .INCLUDE "monitor.inc"
 .INCLUDE "char_io.inc"
 

@@ -11,7 +11,7 @@ HELLO_CMD_ENTRY:
     sta STRING_PTR
     lda #>HI_MESSAGE
     sta STRING_PTR+1
-    jsr PRINTSTR
+    jsr prints
 
     rts
 

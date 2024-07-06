@@ -1,7 +1,8 @@
-
-.SEGMENT "CODE_MAIN"
-.INCLUDE "char_io.inc"
-.INCLUDE "monitor.inc"
+.segment "CODE"
+.include "char_io.inc"
+.include "monitor.inc"
+.include "rom_floppy_constants.inc"
+.include "startup_interface.inc"
 
 ENTRY:
 ;Turn off interrupts and decimal mode
@@ -184,31 +185,6 @@ TILE_LOAD_LOOP:
 
 .GLOBAL init
 
-STACK           = $0100  
-TWOS_BUFFER     = $0300    ;holds the 2-bit chunks
-CONV_TAB        = $0356   ;6+2 conversion table
-BOOT1           = $0400   ;buffer for next stage of loader
-IWM_PH0_OFF     = $c080             ;stepper motor control
-IWM_PH0_ON      = $c081             ;stepper motor control
-IWM_PH2_OFF     = $c084
-IWM_PH2_ON      = $c085
-IWM_MOTOR_ON    = $c089             ;starts drive spinning
-IWM_MOTOR_OFF   = $c088
-IWM_SEL_DRIVE_1 = $c08a             ;selects drive 1
-IWM_Q6_OFF      = $c08c             ;read
-IWM_Q7_OFF      = $c08e             ;WP sense/read
-
-CART_SWITCHES   = $d000
-
-data_ptr        = $26       ;pointer to BOOT1 data buffer
-slot_index      = $2b       ;slot number << 4
-bits            = $3c       ;temp storage for bit manipulation
-sector          = $3d       ;sector to read
-found_track     = $40       ;track found
-track           = $41       ;track to read
-cur_track  = $42
-cur_sector = $43
-
 lda #<BOOT_MSG
 sta $03
 lda #>BOOT_MSG
@@ -276,7 +252,12 @@ seek_loop:
     bpl     seek_loop
     lda     IWM_PH0_OFF
 
-    jsr boot
+    ;Now that we know the drive is initialized, reflect that in the status vars
+    lda #$00
+    sta cur_sector
+    sta cur_track
+
+    jsr system_startup
     jmp init
 
 ReadSector:   clc
@@ -400,8 +381,6 @@ decode_loop:
 
 DiskTestDone:
 
-    ;JMP BOOT1
-
     JMP init
 HALT:
     JMP HALT
@@ -463,26 +442,13 @@ load_next_sector:
 next_sector_done:
     rts
 
+.global load_boot_sector
 load_boot_sector:
     lda     #$00
     sta     data_ptr          ;Store page-aligned
     lda     #>BOOT1           ;Target is the NES RAM boot area
     sta     data_ptr+1
     jsr     load_next_sector
-    rts
-
-;IMPORTANT NOTE: When making the disk image for this, you'll have to skew the sector data
-;                in DOS 3.3 format, because apparently ADT skews them when copying onto the disk
-boot:
-    ;Make sure we're reset to the first sector
-    lda #$00
-    sta cur_sector
-    sta cur_track
-
-    ;Read boot sector into NES RAM (ultimately, that's where the rest of this code should go too)
-    jsr load_boot_sector
-    jmp BOOT1
-
     rts
     
 BOOT_MSG:
@@ -501,13 +467,26 @@ regs:
 CHAR_TILES:
     .incbin "font.chr"
 
-.SEGMENT "BLANK_AREA"
-.REPEAT $C600
-.BYTE $00
-.ENDREP
+.segment "CALL_TABLE"
+jsr PRINTSTR         ;FFC0
+rts
+jsr PRNTCHR          ;FFC4
+rts
+jsr INITKEYBOARD     ;FFC8 
+rts
+jsr load_next_sector ;FFCC
+rts
+jmp init             ;FFD0
+rts
+jsr ReadSector       ;FFD4
+rts
+jsr MON_WAIT         ;FFD8
+rts
+jsr GETKEY           ;FFDC
+rts
 
-.SEGMENT "VECTORS"
-.WORD $0000
-.WORD ENTRY
-.WORD IRQ_BRK_HANDLE
+.segment "VECTORS"
+.word $0000
+.word ENTRY
+.word IRQ_BRK_HANDLE
 
