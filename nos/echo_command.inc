@@ -1,0 +1,2 @@
+.global ECHO_CMD_STR
+.global ECHO_CMD_ENTRY

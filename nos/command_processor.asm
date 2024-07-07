@@ -3,6 +3,7 @@
 .include "hello_command.inc"
 .include "mon_command.inc"
 .include "dir_command.inc"
+.include "echo_command.inc"
 .include "floppy.inc"
 
 .global system_startup
@@ -51,12 +52,12 @@ stash_character:
     bcc type_loop
 
 compare_cmd:
-    ldy #$00
+    ldy #$ff
 compare_next_char:
+    iny
     lda TEXT_BUFFER,Y
     cmp (CMP_STRING),Y
     bne compare_cmd_no_match
-    iny
     cmp #$00
     bne compare_next_char
     lda #$01
@@ -66,6 +67,22 @@ compare_cmd_no_match:
     rts
 
 process_command:
+    ldy $ff
+process_space_check:
+    iny
+    lda TEXT_BUFFER,Y
+    cmp #$20
+    beq process_fixup_space
+    cmp #$00
+    bne process_space_check
+    beq process_command_continue
+process_fixup_space:
+    lda #$00
+    sta TEXT_BUFFER,Y
+    iny
+process_command_continue:
+    tya
+    tax ;Stash pointer to arguments
     ldy #$FF
 next_command:
     iny
@@ -93,19 +110,29 @@ exec_cmd:
     iny
     lda COMMAND_TABLE,Y
     sta COMMAND_ADDRESS+1
-    jmp (COMMAND_ADDRESS)
+    jmp (COMMAND_ADDRESS) ;Note: Callee should expect offset to any args in X
+
 process_command_no_match:
+
     lda #<UNKNOWN_COMMAND_STR
     sta STRING_PTR
     lda #>UNKNOWN_COMMAND_STR
     sta STRING_PTR+1
     jsr prints
+
+    lda #<TEXT_BUFFER
+    sta STRING_PTR
+    lda #>TEXT_BUFFER
+    sta STRING_PTR+1
+    jsr prints
+
     rts
 
 COMMAND_TABLE:
     .word HELLO_CMD_STR, HELLO_CMD_ENTRY
     .word MON_CMD_STR,   MON_CMD_ENTRY
     .word DIR_CMD_STR,   DIR_CMD_ENTRY
+    .word ECHO_CMD_STR,  ECHO_CMD_ENTRY
     .word $0000
 
 MESSAGE_2:
@@ -114,11 +141,11 @@ MESSAGE_2:
 
 PROMPT:
     .byte $0A, $0D
-    .byte "N] ", $00
+    .byte " N]", $00
 
 UNKNOWN_COMMAND_STR:
     .byte $0A, $0D
-    .byte "UNKNOWN COMMAND", $00
+    .byte "UNKNOWN COMMAND: ", $00
 
 MON_STR:
     .byte "MON", $00
