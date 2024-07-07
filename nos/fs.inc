@@ -1,0 +1,1 @@
+.global fs_scan_catalog
