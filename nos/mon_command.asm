@@ -1,9 +1,9 @@
 .segment "CODE"
 .include "rom_constants.inc"
 
-.global MON_CMD_STR
-MON_CMD_STR: .asciiz "MON"
+.global mon_cmd_str
+mon_cmd_str: .asciiz "MON"
 
-.global MON_CMD_ENTRY
-MON_CMD_ENTRY:
+.global mon_cmd_entry
+mon_cmd_entry:
     jmp enter_monitor

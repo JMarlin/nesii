@@ -1,4 +1,4 @@
-.segment "BOOTSECT"
+.segment "BOOT_SECTOR"
 .include "rom_constants.inc"
 .include "command_processor.inc"
 .include "../startup_interface.inc"
@@ -16,11 +16,11 @@ move_bootsect:
 jmp $800E ;This is new_entry at the new location
 
 new_entry:
-    lda #<MESSAGE
-    sta STRING_PTR
-    lda #>MESSAGE
-    sta STRING_PTR+1
-    jsr PRINTSTR
+    lda #<message
+    sta string_ptr
+    lda #>message
+    sta string_ptr+1
+    jsr prints
 
 load_boot_tracks:
     lda #$00
@@ -28,7 +28,7 @@ load_boot_tracks:
     lda #$81
     sta data_ptr+1
 get_next_boot_track:
-    jsr LOAD_NEXT_SECTOR
+    jsr load_next_sector
     inc data_ptr+1
     lda data_ptr+1
     cmp #$90
@@ -36,6 +36,6 @@ get_next_boot_track:
 
     jmp system_startup
 
-MESSAGE:
+message:
     .byte $0A, $0D
     .byte "READING NOS DATA...", $00

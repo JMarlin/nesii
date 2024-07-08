@@ -1,2 +1,2 @@
-.global ECHO_CMD_STR
-.global ECHO_CMD_ENTRY
+.global echo_cmd_str
+.global echo_cmd_entry

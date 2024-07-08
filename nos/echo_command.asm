@@ -1,24 +1,24 @@
 .segment "CODE"
 .include "console.inc"
 
-.global ECHO_CMD_STR
-ECHO_CMD_STR: .asciiz "ECHO"
+.global echo_cmd_str
+echo_cmd_str: .asciiz "ECHO"
 
-.global ECHO_CMD_ENTRY
-ECHO_CMD_ENTRY:
+.global echo_cmd_entry
+echo_cmd_entry:
 
     txa
     pha
     
-    lda #$0A
+    lda #$0a
     jsr console_printc
-    lda #$0D
+    lda #$0d
     jsr console_printc
 
     pla
-    sta STRING_PTR
-    lda #>TEXT_BUFFER
-    sta STRING_PTR+1
+    sta string_ptr
+    lda #>text_buffer
+    sta string_ptr+1
     jsr console_prints
 
     rts

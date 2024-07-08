@@ -4,24 +4,24 @@
 
 dir_str_ptr = $c2
 
-.global DIR_CMD_STR
-DIR_CMD_STR: .asciiz "DIR"
+.global dir_cmd_str
+dir_cmd_str: .asciiz "DIR"
 
-.global DIR_CMD_ENTRY
-DIR_CMD_ENTRY:
+.global dir_cmd_entry
+dir_cmd_entry:
 
-    lda #$0A
+    lda #$0a
     jsr console_printc
-    lda #$0D
+    lda #$0d
     jsr console_printc
 
     ldx #<dir_print_name
     lda #>dir_print_name
     jsr fs_scan_catalog
 
-    lda #$0A
+    lda #$0a
     jsr console_printc
-    lda #$0D
+    lda #$0d
     jsr console_printc
 
 ;TODO: Someday, do error handling
@@ -33,9 +33,9 @@ dir_print_name:
     stx dir_str_ptr
     sta dir_str_ptr+1
 
-    lda #$0A
+    lda #$0a
     jsr console_printc
-    lda #$0D
+    lda #$0d
     jsr console_printc
     lda #$20
     jsr console_printc
@@ -48,10 +48,10 @@ dir_print_name_next_char:
     tya
     pha
     lda (dir_str_ptr),Y
-    and #$7F
+    and #$7f
     jsr console_printc
     pla
-    cmp #$1A
+    cmp #$1a
     beq dir_print_name_done
     tay
     iny

@@ -34,7 +34,7 @@ fs_catalog_chain_next:
     beq fs_catalog_chain_done
     tax
     ldy $9002
-    lda sector_skew_table,Y
+    lda sector_skew_table,y
     jsr floppy_read
 
     lda #$0B
@@ -42,7 +42,7 @@ fs_catalog_chain_next:
 
 fs_entry_process:
     ldy #$00
-    lda (floppy_data_ptr),Y
+    lda (floppy_data_ptr),y
     beq fs_entry_process_next
 
 ;Call back to the user with the entry pointer in A:X
@@ -66,6 +66,16 @@ fs_catalog_chain_done:
     jsr floppy_off
 
     rts
+
+
+;Accepts pointer to file name in A:X
+;Returns pointer to file info structure in A:X
+.global fs_find_file
+fs_find_file:
+    lda #$00
+    ldx #$00
+    rts
+
 
 fs_callback_trampoline:
     jmp (general_pointer)

@@ -23,14 +23,14 @@ floppy_motor_wait_top:
 .global floppy_on
 floppy_on:
     ldx #$60
-    lda IWM_MOTOR_ON,X
+    lda iwm_motor_on,X
     rts
 
 
 .global floppy_off
 floppy_off:
     ldx #$60
-    lda IWM_MOTOR_OFF,X
+    lda iwm_motor_off,X
     rts
 
 
@@ -108,17 +108,17 @@ step_forward:
     asl     A
     ora     #$62
     tax
-    lda     IWM_PH0_ON,x      
+    lda     iwm_ph0_on,x      
     jsr     monitor_wait      
-    lda     IWM_PH0_OFF,x     
+    lda     iwm_ph0_off,x     
     inx
     inx
     txa
     and     #$F7
     tax
-    lda     IWM_PH0_ON,x
+    lda     iwm_ph0_on,x
     jsr     monitor_wait
-    lda     IWM_PH0_OFF,x
+    lda     iwm_ph0_off,x
     inc     current_track
 step_forward_done:
     rts
@@ -128,21 +128,21 @@ step_back:
     lda     current_track
     beq     step_back_done
     and     #$01
-    asl     A
-    asl     A
+    asl     
+    asl     
     ora     #$60
     tax
-    lda     IWM_PH0_ON,x      
+    lda     iwm_ph0_on,x      
     jsr     monitor_wait      
-    lda     IWM_PH0_OFF,x     
+    lda     iwm_ph0_off,x     
     dex
     dex
     txa
-    and     #$F7
+    and     #$f7
     tax
-    lda     IWM_PH0_ON,x
+    lda     iwm_ph0_on,x
     jsr     monitor_wait
-    lda     IWM_PH0_OFF,x
+    lda     iwm_ph0_off,x
     dec     current_track
 step_back_done:
     rts
