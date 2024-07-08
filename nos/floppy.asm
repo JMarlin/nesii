@@ -1,5 +1,6 @@
 .segment "CODE"
 .include "rom_constants.inc"
+.include "globals.inc"
 
 .global floppy_init
 floppy_init:

@@ -1,11 +1,12 @@
 .segment "CODE"
-.include "rom_constants.inc"
+.include "globals.inc"
+.include "floppy.inc"
+.include "console.inc"
 .include "hello_command.inc"
 .include "mon_command.inc"
 .include "dir_command.inc"
 .include "echo_command.inc"
 .include "run_command.inc"
-.include "floppy.inc"
 
 .global system_startup
 system_startup:
@@ -14,21 +15,12 @@ system_startup:
 .global command_processor_entry
 command_processor_entry:
 
-    jsr init_keyboard
-
-    lda #<startup_message
-    sta string_ptr
-    lda #>startup_message
-    sta string_ptr+1
-    jsr prints
+    jsr console_init
+    print startup_message
 
 prompt_loop:
 
-    lda #<prompt
-    sta string_ptr
-    lda #>prompt
-    sta string_ptr+1
-    jsr prints
+    print prompt
 
     ldy #$00
     sta text_buffer
@@ -115,17 +107,8 @@ exec_cmd:
 
 process_command_no_match:
 
-    lda #<unknown_command_message
-    sta string_ptr
-    lda #>unknown_command_message
-    sta string_ptr+1
-    jsr prints
-
-    lda #<text_buffer
-    sta string_ptr
-    lda #>text_buffer
-    sta string_ptr+1
-    jsr prints
+    print unknown_command_message
+    print text_buffer
 
     rts
 
@@ -138,11 +121,11 @@ command_table:
     .word $0000
 
 startup_message:
-    .byte "DONE", $0A, $0D
+    .byte "DONE", $0a, $0d
     .byte "WELCOME TO NOS 0.0.1", $00
 
 prompt:
-    .byte $0A, $0D
+    .byte $0a, $0d
     .byte " N]", $00
 
 unknown_command_message:

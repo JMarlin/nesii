@@ -1,5 +1,5 @@
 .segment "CODE"
-.include "rom_constants.inc"
+.include "console.inc"
 
 .global hello_cmd_str
 hello_cmd_str: .asciiz "HELLO"
@@ -7,11 +7,7 @@ hello_cmd_str: .asciiz "HELLO"
 .global hello_cmd_entry
 hello_cmd_entry:
 
-    lda #<hi_message
-    sta string_ptr
-    lda #>hi_message
-    sta string_ptr+1
-    jsr prints
+    print hi_message
 
     rts
 

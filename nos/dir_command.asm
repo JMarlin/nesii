@@ -47,7 +47,7 @@ dir_print_name:
 dir_print_name_next_char:
     tya
     pha
-    lda (dir_str_ptr),Y
+    lda (dir_str_ptr),y
     and #$7f
     jsr console_printc
     pla

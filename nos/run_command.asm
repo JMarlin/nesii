@@ -22,20 +22,12 @@ run_cmd_entry:
     bne run_cmd_file_exists
 
     ;Null pointer returned, file not found
-    lda #<file_not_found_message
-    sta string_ptr
-    lda #>file_not_found_message
-    sta string_ptr+1
-    jsr console_prints
+    print file_not_found_message
 
     rts
     
 run_cmd_file_exists:
-    lda #<file_found_message
-    sta string_ptr
-    lda #>file_found_message
-    sta string_ptr+1
-    jsr console_prints
+    print file_found_message
 
     rts
 

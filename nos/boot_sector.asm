@@ -1,5 +1,6 @@
 .segment "BOOT_SECTOR"
 .include "rom_constants.inc"
+.include "globals.inc"
 .include "command_processor.inc"
 .include "../startup_interface.inc"
 .include "floppy.inc"
