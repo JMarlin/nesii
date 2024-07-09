@@ -8,26 +8,42 @@ run_cmd_str: .asciiz "RUN"
 .global run_cmd_entry
 run_cmd_entry:
 
-    ;X contains offset into the command buffer of the passed application name
-    ;fs_find_file expects a filename pointer in A:X
-    lda #>text_buffer
+    ;Stash registers that we clobber
+    lda r0
+    pha
+    lda r1
+    pha
+
+    ;r1:r0 contains pointer to argument string
+    ;fs_find_file expects filename pointer in r1:r0
     jsr fs_find_file
 
-    ;fs_find_file returns pointer to file info block in A:X, null if not found
+    ;fs_find_file returns pointer to file info block in r1:r0, null if not found
+    lda r0
     cmp #$00
     bne run_cmd_file_exists
     tay
     txa
+    lda r1
     cmp #$00
     bne run_cmd_file_exists
 
     ;Null pointer returned, file not found
     print file_not_found_message
 
-    rts
+    clc
+    bcc run_cmd_entry_exit
     
 run_cmd_file_exists:
     print file_found_message
+
+run_cmd_entry_exit:
+
+    ;restore clobbered registers
+    pla
+    sta r1
+    pla
+    sta r0
 
     rts
 

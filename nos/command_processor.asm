@@ -27,7 +27,7 @@ prompt_loop:
     sty text_index
 type_loop:
     jsr getc
-    cmp #$0D
+    cmp #$0d
     bne stash_character
     lda #$00
     ldy text_index
@@ -103,7 +103,10 @@ exec_cmd:
     iny
     lda command_table,y
     sta command_address+1
-    jmp (command_address) ;Note: Callee should expect offset to any args in X
+    stx r0
+    lda #>text_buffer
+    sta r1
+    jmp (command_address) ;Note: Callee should expect pointer to args in r1:r0
 
 process_command_no_match:
 
