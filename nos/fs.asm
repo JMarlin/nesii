@@ -41,8 +41,7 @@ fs_catalog_chain_next:
     lda $9001
     beq fs_catalog_chain_finished_exit
     tax
-    ldy $9002
-    lda sector_skew_table,y
+    lda $9002
     jsr floppy_read
 
     lda #$0B
@@ -131,6 +130,7 @@ fs_find_file:
     sta r0
     lda r3
     sta r1
+
     clc
     bcc fs_find_file_done
 
@@ -185,7 +185,7 @@ fs_find_file_callback_no_space_fixup:
     ;Set user data to the current file info pointer and exit early
     lda r4
     sta r2
-    lda r4
+    lda r5
     sta r3
     lda #$00
     sta r0
@@ -216,5 +216,3 @@ fs_callback_trampoline:
     jmp (r0)
 
 
-sector_skew_table:
-    .byte $00, $0d, $0b, $09, $07, $05, $03, $01, $0e, $0c, $0a, $08, $06, $04, $02, $0f

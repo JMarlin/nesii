@@ -45,6 +45,8 @@ floppy_read:
     tax
     sta track
     pla
+    tay
+    lda sector_skew_table,y
     sta sector
     ldx #$60
     jsr read_sector
@@ -147,3 +149,6 @@ step_back:
     dec     current_track
 step_back_done:
     rts
+
+sector_skew_table:
+    .byte $00, $0d, $0b, $09, $07, $05, $03, $01, $0e, $0c, $0a, $08, $06, $04, $02, $0f

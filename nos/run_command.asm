@@ -1,6 +1,7 @@
 .segment "CODE"
 .include "console.inc"
 .include "fs.inc"
+.include "floppy.inc"
 
 .global run_cmd_str
 run_cmd_str: .asciiz "RUN"
@@ -37,6 +38,21 @@ run_cmd_entry:
 run_cmd_file_exists:
     print file_found_message
 
+;TESTING: Dump the initial T/S sector of the found file
+    lda #$00
+    sta floppy_data_ptr
+    lda #$90
+    sta floppy_data_ptr+1
+    ldy #$00
+    lda (r0),y
+    tax
+    iny
+    lda (r0),y
+    jsr floppy_read
+
+    jmp enter_monitor
+;END TESTING
+
 run_cmd_entry_exit:
 
     ;restore clobbered registers
@@ -48,7 +64,7 @@ run_cmd_entry_exit:
     rts
 
 file_found_message:
-    .byte $0a, $0d, "FILE FOUND", $00
+    .byte $0a, $0d, " FILE FOUND", $00
 
 file_not_found_message:
-    .byte $0a, $0d, "FILE NOT FOUND", $00
+    .byte $0a, $0d, " FILE NOT FOUND", $00
