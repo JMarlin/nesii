@@ -1,4 +1,4 @@
-NOS_OBJECTS = boot_sector.o command_processor.o dir_command.o floppy.o fs.o hello_command.o mon_command.o echo_command.o run_command.o
+NOS_OBJECTS = boot_sector.o command_processor.o dir_command.o floppy.o fs.o hello_command.o mon_command.o echo_command.o run_command.o console.o
 
 all: nos.dsk
 

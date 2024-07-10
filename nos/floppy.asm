@@ -75,32 +75,6 @@ floppy_seek_done:
     pla
     rts
 
-print_hex_byte:
-    pha
-    pha
-    lsr
-    lsr
-    lsr
-    lsr
-    jsr print_hex_nybble
-    pla
-    and #$0F
-    jsr print_hex_nybble
-    pla
-    rts
-
-print_hex_nybble:
-    pha
-    adc #$30
-    cmp #$3A
-    bcc print_hex_nybble_done
-    clc
-    adc #$07
-print_hex_nybble_done:
-    jsr prints
-    pla
-    rts
-
 
 step_forward:
     lda     current_track
