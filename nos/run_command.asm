@@ -14,6 +14,16 @@ run_cmd_entry:
     pha
     lda r1
     pha
+    lda r2
+    pha
+    lda r3
+    pha
+
+    ;Back-up the argument pointer
+    lda r0
+    sta r2
+    lda r1
+    sta r3
 
     ;r1:r0 contains pointer to argument string
     ;fs_find_file expects filename pointer in r1:r0
@@ -24,7 +34,6 @@ run_cmd_entry:
     cmp #$00
     bne run_cmd_file_exists
     tay
-    txa
     lda r1
     cmp #$00
     bne run_cmd_file_exists
@@ -38,9 +47,7 @@ run_cmd_entry:
 run_cmd_file_exists:
     print file_found_message
 
-;TODO: switch this to using some nice higher-level open and read routines
-
-    ;Check file type and bomb out if it's not a binary
+;Check file type and bomb out if it's not a binary
     ldy #$02
     lda (r0),y
     and #$04
@@ -52,46 +59,42 @@ run_cmd_file_exists:
     bcc run_cmd_entry_exit
 
 run_cmd_entry_load_content:
-;TESTING: Dump the initial T/S sector of the found file
-    lda #$00
-    sta floppy_data_ptr
-    lda #$90
-    sta floppy_data_ptr+1
-    ldy #$00
-    lda (r0),y
-    tax
-    iny
-    lda (r0),y
-    jsr floppy_read
-
-;TESTING: Load the first sector specified in the initial T/S sector
-    lda #$00
-    sta floppy_data_ptr
-    lda #$90
-    sta floppy_data_ptr+1
-    lda $900C
-    tax
-    lda $900D
-    jsr floppy_read
+    ;Restore the argument pointer
+    lda r2
+    sta r0
+    lda r3
+    sta r1
+    jsr fs_open_file
 
 ;TESTING: Grab and display the load address and size
     print file_address_message
-    lda $9001
+    jsr fs_read_file_byte
+    lda r1
+    sta r2
+    jsr fs_read_file_byte
+    lda r1
     jsr print_hex_byte
-    lda $9000
+    lda r2
     jsr print_hex_byte
 
     print file_size_message
-    lda $9003
+    jsr fs_read_file_byte
+    lda r1
+    sta r2
+    jsr fs_read_file_byte
+    lda r1
     jsr print_hex_byte
-    lda $9002
+    lda r2
     jsr print_hex_byte
-
 ;END TESTING
 
 run_cmd_entry_exit:
 
     ;restore clobbered registers
+    pla
+    sta r3
+    pla
+    sta r2
     pla
     sta r1
     pla

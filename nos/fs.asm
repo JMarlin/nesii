@@ -212,6 +212,85 @@ fs_find_file_exit:
     rts
 
 
+;No arguments, returns success(1)/failure(0) in r0 and byte value in r1
+;TODO: Currently doesn't traverse past the first T/S sector
+.global fs_read_file_byte
+fs_read_file_byte:
+    lda #<sector_buffer
+    sta r0
+    lda #>sector_buffer
+    sta r1
+    ldy open_file_byte_offset
+    lda (r0),y
+    pha
+    iny
+    sty open_file_byte_offset
+    bne fs_read_file_byte_exit
+;Byte offset rolled over, read the next sector
+;Read active file's first T/S sector
+    lda #<sector_buffer
+    sta floppy_data_ptr
+    lda #>sector_buffer
+    sta floppy_data_ptr+1
+    ldx open_file_track
+    lda open_file_sector
+    jsr floppy_read
+;Increment the open file's sector offset and load that sector
+    lda #<sector_buffer
+    sta floppy_data_ptr
+    lda #>sector_buffer
+    sta floppy_data_ptr+1
+    inc open_file_sector_offset
+    lda open_file_sector_offset
+    clc
+    asl
+    clc
+    adc #$0C
+    tay
+    lda (r0),y
+    tax
+    iny
+    lda (r0),y
+    jsr floppy_read
+fs_read_file_byte_exit:
+    pla
+    sta r1
+    lda #$01
+    sta r0
+    rts
+
+
+;Accepts pointer to file name in r1:r0
+;Opens the file globally, returns 0 in r0 on failure or 1 in r0 on success
+.global fs_open_file
+fs_open_file:
+    jsr fs_find_file
+    lda r0
+    cmp #$00
+    bne fs_open_file_exists
+    lda r1
+    cmp #$00
+    bne fs_open_file_exists
+    beq fs_open_file_exit
+fs_open_file_exists:
+    ldy #$00
+    lda (r0),y
+    sta open_file_track
+    iny
+    lda (r0),y
+    sta open_file_sector
+    lda #$ff
+    sta open_file_byte_offset
+    sta open_file_sector_offset
+    jsr fs_read_file_byte
+    ldy #$00
+    sty open_file_byte_offset
+    iny
+    sty r0
+fs_open_file_exit:
+    rts
+
+
 fs_callback_trampoline:
     jmp (r0)
 
