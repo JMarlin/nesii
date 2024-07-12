@@ -228,6 +228,8 @@ fs_read_file_byte:
     bne fs_read_file_byte_exit
 ;Byte offset rolled over, read the next sector
 ;Read active file's first T/S sector
+    jsr floppy_on
+    jsr floppy_motor_wait
     lda #<sector_buffer
     sta floppy_data_ptr
     lda #>sector_buffer
@@ -252,6 +254,7 @@ fs_read_file_byte:
     iny
     lda (r0),y
     jsr floppy_read
+    jsr floppy_off
 fs_read_file_byte_exit:
     pla
     sta r1
