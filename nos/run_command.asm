@@ -18,6 +18,10 @@ run_cmd_entry:
     pha
     lda r3
     pha
+    lda r4
+    pha
+    lda r5
+    pha
 
     ;Back-up the argument pointer
     lda r0
@@ -41,8 +45,7 @@ run_cmd_entry:
     ;Null pointer returned, file not found
     print file_not_found_message
 
-    clc
-    bcc run_cmd_entry_exit
+    jmp run_cmd_entry_exit
     
 run_cmd_file_exists:
     print file_found_message
@@ -55,8 +58,7 @@ run_cmd_file_exists:
 
     print file_not_binary_message
 
-    clc
-    bcc run_cmd_entry_exit
+    jmp run_cmd_entry_exit
 
 run_cmd_entry_load_content:
     ;Restore the argument pointer
@@ -73,6 +75,7 @@ run_cmd_entry_load_content:
     sta r2
     jsr fs_read_file_byte
     lda r1
+    sta r3
     jsr print_hex_byte
     lda r2
     jsr print_hex_byte
@@ -80,17 +83,37 @@ run_cmd_entry_load_content:
     print file_size_message
     jsr fs_read_file_byte
     lda r1
-    sta r2
+    sta r4
     jsr fs_read_file_byte
     lda r1
+    sta r5
     jsr print_hex_byte
-    lda r2
+    lda r4
     jsr print_hex_byte
 ;END TESTING
+
+    ldy #$00
+run_cmd_store_byte:
+    tya                         
+    pha
+    jsr fs_read_file_byte
+    pla
+    tay
+    lda r1
+    sta (r2),y
+    iny
+    bne run_cmd_store_byte ;TODO: do loads past 256 bytes
+                           ;TODO: actually check for the end of the file
+
+jmp enter_monitor
 
 run_cmd_entry_exit:
 
     ;restore clobbered registers
+    pla
+    sta r5
+    pla
+    sta r4
     pla
     sta r3
     pla
