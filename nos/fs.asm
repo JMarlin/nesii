@@ -263,10 +263,50 @@ fs_read_file_byte_exit:
     rts
 
 
+;Reset all of the internal accounting info for the open file
+;back to the first byte in the stream
+;Accepts an open file info pointer in r1:r0
+;No return value, assumed to always work
+.global fs_rewind_file
+fs_rewind_file:
+    ;Reset the active t/s list sector to the file's base t/s list sector
+    ldy ofi_base_ts_sector_offset
+    lda (r0),y
+    ldy ofi_active_ts_sector_offset
+    sta (r0),y
+    ldy ofi_base_ts_track_offset
+    lda (r0),y
+    ldy ofi_active_ts_track_offset
+    sta (r0),y
+    ;Clear the file's current offset into the data buffer and current
+    ;offset into the active T/S list entries
+    lda #$00
+    ldy ofi_current_byte_offset
+    sta (r0),y
+    ldy ofi_current_sector_offset
+    sta (r0),y
+    ;Look up the first T/S list TS entry and copy it into the active
+    ;data sector TS address field
+    rts
+
+
+;Internal function for making sure the data buffer for the open file
+;is popultated to match the currently active data sector speficied
+;by the passed-in open file info
+;Accepts zero-page address of an open file info pointer in r0
+;No return value, assumed to always work
+_fs_populate_sector_buffer:
+    rts
+
+
 ;Accepts pointer to file name in r1:r0
 ;Opens the file globally, returns 0 in r0 on failure or 1 in r0 on success
 .global fs_open_file
 fs_open_file:
+    ;Push clobbered registers
+    lda r1
+    pha
+    ;Attempt to find the file from the passed-in name pointer
     jsr fs_find_file
     lda r0
     cmp #$00
@@ -276,21 +316,40 @@ fs_open_file:
     bne fs_open_file_exists
     beq fs_open_file_exit
 fs_open_file_exists:
+    ;Make sure the open file info pointer is initialized to our
+    ;current fixed file info block
+    lda #<fixed_file_info_ptr
+    sta open_file_info_ptr_0
+    lda #>fixed_file_info_ptr
+    sta open_file_info_ptr_0+1
+    ;Stash initial T/S-list TS address in the open file info struct
     ldy #$00
     lda (r0),y
-    sta open_file_track
-    iny
+    ldy ofi_active_ts_track_offset
+    sta (open_file_info_ptr_0),y
+    ldy #$01
     lda (r0),y
-    sta open_file_sector
+    ldy ofi_active_ts_sector_offset
+    sta (open_file_info_ptr_0),y
     lda #$ff
-    sta open_file_byte_offset
-    sta open_file_sector_offset
-    jsr fs_read_file_byte
-    ldy #$00
-    sty open_file_byte_offset
-    iny
-    sty r0
+    ldy ofi_current_byte_offset
+    sta (open_file_info_ptr_0),y
+    ldy ofi_current_sector_offset
+    sta (open_file_info_ptr_0),y
+    ;Rewind the new file
+    lda #open_file_info_ptr_0
+    sta r0
+    lda #$00
+    sta r1
+    jsr fs_rewind_file
+    ;Make sure the file's initial buffer is loaded
+    jsr _fs_populate_sector_buffer
+    lda #$00
+    sta r0
 fs_open_file_exit:
+    ;Restore clobbered registers
+    pla
+    sta r1
     rts
 
 

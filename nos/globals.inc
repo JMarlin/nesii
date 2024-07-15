@@ -1,6 +1,4 @@
-.ifdef globals_inc
-.else
-
+.ifndef globals_inc
     globals_inc = 1
 
     general_pointer  = $c0
@@ -15,10 +13,11 @@
     cur_cmd_index    = $53
     command_address  = $54
     current_track    = $42
-    open_file_track  = $60
-    open_file_sector = $61
-    open_file_byte_offset = $62
-    open_file_sector_offset = $63
+
+    fixed_file_info_ptr  = $0600
+    open_file_info_ptr_0 = $60
+    sector_buffer_loaded_track  = $61
+    sector_buffer_loaded_sector = $62
 
     ;The following zero-page locations are reserved
     ;for local use by subroutines
