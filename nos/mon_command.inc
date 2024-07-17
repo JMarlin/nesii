@@ -1,2 +1,2 @@
-.global MON_CMD_STR
-.global MON_CMD_ENTRY
+.global mon_cmd_str
+.global mon_cmd_entry

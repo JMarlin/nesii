@@ -1,10 +1,37 @@
 .segment "CODE"
 .include "rom_constants.inc"
+.include "globals.inc"
 
 .global floppy_init
 floppy_init:
+    jsr floppy_off
+    rts
+
+
+.global floppy_motor_wait
+floppy_motor_wait:
+    ldx #$30
+floppy_motor_wait_top:
+    txa
+    pha
+    jsr monitor_wait
+    pla
+    tax
+    dex
+    bne floppy_motor_wait_top
+
+
+.global floppy_on
+floppy_on:
     ldx #$60
-    lda IWM_MOTOR_OFF,X
+    lda iwm_motor_on,X
+    rts
+
+
+.global floppy_off
+floppy_off:
+    ldx #$60
+    lda iwm_motor_off,X
     rts
 
 
@@ -18,6 +45,8 @@ floppy_read:
     tax
     sta track
     pla
+    tay
+    lda sector_skew_table,y
     sta sector
     ldx #$60
     jsr read_sector
@@ -46,32 +75,6 @@ floppy_seek_done:
     pla
     rts
 
-print_hex_byte:
-    pha
-    pha
-    lsr
-    lsr
-    lsr
-    lsr
-    jsr print_hex_nybble
-    pla
-    and #$0F
-    jsr print_hex_nybble
-    pla
-    rts
-
-print_hex_nybble:
-    pha
-    adc #$30
-    cmp #$3A
-    bcc print_hex_nybble_done
-    clc
-    adc #$07
-print_hex_nybble_done:
-    jsr PRNTCHR
-    pla
-    rts
-
 
 step_forward:
     lda     current_track
@@ -82,17 +85,17 @@ step_forward:
     asl     A
     ora     #$62
     tax
-    lda     IWM_PH0_ON,x      
+    lda     iwm_ph0_on,x      
     jsr     monitor_wait      
-    lda     IWM_PH0_OFF,x     
+    lda     iwm_ph0_off,x     
     inx
     inx
     txa
     and     #$F7
     tax
-    lda     IWM_PH0_ON,x
+    lda     iwm_ph0_on,x
     jsr     monitor_wait
-    lda     IWM_PH0_OFF,x
+    lda     iwm_ph0_off,x
     inc     current_track
 step_forward_done:
     rts
@@ -102,21 +105,24 @@ step_back:
     lda     current_track
     beq     step_back_done
     and     #$01
-    asl     A
-    asl     A
+    asl     
+    asl     
     ora     #$60
     tax
-    lda     IWM_PH0_ON,x      
+    lda     iwm_ph0_on,x      
     jsr     monitor_wait      
-    lda     IWM_PH0_OFF,x     
+    lda     iwm_ph0_off,x     
     dex
     dex
     txa
-    and     #$F7
+    and     #$f7
     tax
-    lda     IWM_PH0_ON,x
+    lda     iwm_ph0_on,x
     jsr     monitor_wait
-    lda     IWM_PH0_OFF,x
+    lda     iwm_ph0_off,x
     dec     current_track
 step_back_done:
     rts
+
+sector_skew_table:
+    .byte $00, $0d, $0b, $09, $07, $05, $03, $01, $0e, $0c, $0a, $08, $06, $04, $02, $0f

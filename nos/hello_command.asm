@@ -1,20 +1,16 @@
 .segment "CODE"
-.include "rom_constants.inc"
+.include "console.inc"
 
-.global HELLO_CMD_STR
-HELLO_CMD_STR: .asciiz "HELLO"
+.global hello_cmd_str
+hello_cmd_str: .asciiz "HELLO"
 
-.global HELLO_CMD_ENTRY
-HELLO_CMD_ENTRY:
+.global hello_cmd_entry
+hello_cmd_entry:
 
-    lda #<HI_MESSAGE
-    sta STRING_PTR
-    lda #>HI_MESSAGE
-    sta STRING_PTR+1
-    jsr PRINTSTR
+    print hi_message
 
     rts
 
-HI_MESSAGE:
-    .byte $0A, $0D, "HI TO YOU!", $00
+hi_message:
+    .byte $0a, $0d, "HI TO YOU!", $00
 

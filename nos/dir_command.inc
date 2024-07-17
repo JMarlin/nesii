@@ -1,2 +1,2 @@
-.global DIR_CMD_STR
-.global DIR_CMD_ENTRY
+.global dir_cmd_str
+.global dir_cmd_entry

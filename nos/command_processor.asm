@@ -1,57 +1,56 @@
 .segment "CODE"
-.include "rom_constants.inc"
+.include "globals.inc"
+.include "floppy.inc"
+.include "console.inc"
 .include "hello_command.inc"
 .include "mon_command.inc"
 .include "dir_command.inc"
+.include "echo_command.inc"
+.include "run_command.inc"
+
+.global system_startup
+system_startup:
+    jsr floppy_init
 
 .global command_processor_entry
 command_processor_entry:
 
-    jsr INITKEYBOARD
-
-    lda #<MESSAGE_2
-    sta STRING_PTR
-    lda #>MESSAGE_2
-    sta STRING_PTR+1
-    jsr PRINTSTR
+    jsr console_init
+    print startup_message
 
 prompt_loop:
 
-    lda #<PROMPT
-    sta STRING_PTR
-    lda #>PROMPT
-    sta STRING_PTR+1
-    jsr PRINTSTR
+    print prompt
 
     ldy #$00
-    sta TEXT_BUFFER
-    sty TEXT_INDEX
+    sta text_buffer
+    sty text_index
 type_loop:
-    jsr GETKEY
-    cmp #$0D
+    jsr getc
+    cmp #$0d
     bne stash_character
     lda #$00
-    ldy TEXT_INDEX
-    sta TEXT_BUFFER,Y
+    ldy text_index
+    sta text_buffer,y
     jsr process_command
     clc
     bcc prompt_loop
 stash_character:
-    ldy TEXT_INDEX
-    sta TEXT_BUFFER,Y
+    ldy text_index
+    sta text_buffer,y
     iny
-    sty TEXT_INDEX
-    jsr PRNTCHR
+    sty text_index
+    jsr printc
     clc
     bcc type_loop
 
 compare_cmd:
-    ldy #$00
+    ldy #$ff
 compare_next_char:
-    lda TEXT_BUFFER,Y
-    cmp (CMP_STRING),Y
-    bne compare_cmd_no_match
     iny
+    lda text_buffer,y
+    cmp (cmp_string),y
+    bne compare_cmd_no_match
     cmp #$00
     bne compare_next_char
     lda #$01
@@ -61,20 +60,36 @@ compare_cmd_no_match:
     rts
 
 process_command:
+    ldy $ff
+process_space_check:
+    iny
+    lda text_buffer,y
+    cmp #$20
+    beq process_fixup_space
+    cmp #$00
+    bne process_space_check
+    beq process_command_continue
+process_fixup_space:
+    lda #$00
+    sta text_buffer,Y
+    iny
+process_command_continue:
+    tya
+    tax ;Stash pointer to arguments
     ldy #$FF
 next_command:
     iny
     ;Load string ptr LSB
-    lda COMMAND_TABLE,Y
-    sta CMP_STRING
+    lda command_table,y
+    sta cmp_string
     ;Load string ptr MSB
     iny 
-    lda COMMAND_TABLE,Y
+    lda command_table,y
     beq process_command_no_match
-    sta CMP_STRING+1
-    sty CUR_CMD_INDEX
+    sta cmp_string+1
+    sty cur_cmd_index
     jsr compare_cmd
-    ldy CUR_CMD_INDEX
+    ldy cur_cmd_index
     cmp #$00
     bne exec_cmd
     iny
@@ -83,37 +98,39 @@ next_command:
     bcc next_command
 exec_cmd:
     iny
-    lda COMMAND_TABLE,Y
-    sta COMMAND_ADDRESS
+    lda command_table,y
+    sta command_address
     iny
-    lda COMMAND_TABLE,Y
-    sta COMMAND_ADDRESS+1
-    jmp (COMMAND_ADDRESS)
+    lda command_table,y
+    sta command_address+1
+    stx r0
+    lda #>text_buffer
+    sta r1
+    jmp (command_address) ;Note: Callee should expect pointer to args in r1:r0
+
 process_command_no_match:
-    lda #<UNKNOWN_COMMAND_STR
-    sta STRING_PTR
-    lda #>UNKNOWN_COMMAND_STR
-    sta STRING_PTR+1
-    jsr PRINTSTR
+
+    print unknown_command_message
+    print text_buffer
+
     rts
 
-COMMAND_TABLE:
-    .word HELLO_CMD_STR, HELLO_CMD_ENTRY
-    .word MON_CMD_STR,   MON_CMD_ENTRY
-    .word DIR_CMD_STR,   DIR_CMD_ENTRY
+command_table:
+    .word hello_cmd_str, hello_cmd_entry
+    .word mon_cmd_str,   mon_cmd_entry
+    .word dir_cmd_str,   dir_cmd_entry
+    .word echo_cmd_str,  echo_cmd_entry
+    .word run_cmd_str,   run_cmd_entry
     .word $0000
 
-MESSAGE_2:
-    .byte "DONE", $0A, $0D
+startup_message:
+    .byte "DONE", $0a, $0d
     .byte "WELCOME TO NOS 0.0.1", $00
 
-PROMPT:
-    .byte $0A, $0D
-    .byte "N] ", $00
+prompt:
+    .byte $0a, $0d
+    .byte " N]", $00
 
-UNKNOWN_COMMAND_STR:
+unknown_command_message:
     .byte $0A, $0D
-    .byte "UNKNOWN COMMAND", $00
-
-MON_STR:
-    .byte "MON", $00
+    .byte "UNKNOWN COMMAND: ", $00

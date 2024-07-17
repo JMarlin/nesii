@@ -1,2 +1,2 @@
-.global HELLO_CMD_STR
-.global HELLO_CMD_ENTRY
+.global hello_cmd_str
+.global hello_cmd_entry
