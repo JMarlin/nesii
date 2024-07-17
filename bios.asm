@@ -3,6 +3,7 @@
 .include "monitor.inc"
 .include "rom_floppy_constants.inc"
 .include "startup_interface.inc"
+.include "floppy.inc"
 
 ENTRY:
 ;Turn off interrupts and decimal mode
@@ -365,6 +366,7 @@ DiskTestDone:
 HALT:
     JMP HALT
 
+.global MON_WAIT
 MON_WAIT:
     TYA
     LDY #$02 ;NOTE: We do this twice because of the possibility
@@ -481,6 +483,16 @@ rts
 jsr MON_WAIT         ;FFD8
 rts
 jsr GETKEY           ;FFDC
+rts
+jsr floppy_read     ;FFE0
+rts
+jsr floppy_init     ;FFE4
+rts
+jsr floppy_off      ;FFE8
+rts
+jsr floppy_on       ;FFEC
+rts
+jsr floppy_motor_wait ;FFF0
 rts
 
 .segment "VECTORS"

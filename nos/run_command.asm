@@ -1,7 +1,6 @@
 .segment "CODE"
 .include "console.inc"
 .include "fs.inc"
-.include "floppy.inc"
 
 .global run_cmd_str
 run_cmd_str: .asciiz "RUN"
@@ -145,7 +144,7 @@ _run_cmd_trampoline:
     jmp (r2)
 
 file_not_found_message:
-    .byte $0a, $0d, " FILE NOT FOUND", $00
+    .byte $0a, $0d, "?", $00
 
 file_not_binary_message:
-    .byte $0a, $0d, " NOT A BIN!", $00
+    .byte $0a, $0d, "NOT BIN", $00

@@ -1,6 +1,5 @@
 .segment "CODE"
 .include "globals.inc"
-.include "floppy.inc"
 .include "console.inc"
 .include "hello_command.inc"
 .include "mon_command.inc"
@@ -116,16 +115,15 @@ process_command_no_match:
     rts
 
 command_table:
-    .word hello_cmd_str, hello_cmd_entry
+;    .word hello_cmd_str, hello_cmd_entry
     .word mon_cmd_str,   mon_cmd_entry
     .word dir_cmd_str,   dir_cmd_entry
-    .word echo_cmd_str,  echo_cmd_entry
+;    .word echo_cmd_str,  echo_cmd_entry
     .word run_cmd_str,   run_cmd_entry
     .word $0000
 
 startup_message:
-    .byte "DONE", $0a, $0d
-    .byte "WELCOME TO NOS 0.0.1", $00
+    .byte "OK", $00
 
 prompt:
     .byte $0a, $0d
@@ -133,4 +131,4 @@ prompt:
 
 unknown_command_message:
     .byte $0A, $0D
-    .byte "UNKNOWN COMMAND: ", $00
+    .byte "?", $00

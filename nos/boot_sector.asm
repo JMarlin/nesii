@@ -3,7 +3,6 @@
 .include "globals.inc"
 .include "command_processor.inc"
 .include "../startup_interface.inc"
-.include "floppy.inc"
 
 boot_sector_start:
 
@@ -14,7 +13,7 @@ move_bootsect:
     iny
     bne move_bootsect
 
-jmp $800E ;This is new_entry at the new location
+jmp $040E ;This is new_entry at the new location
 
 new_entry:
     lda #<message
@@ -26,7 +25,7 @@ new_entry:
 load_boot_tracks:
     lda #$00
     sta data_ptr
-    lda #$81
+    lda #$05
     sta data_ptr+1
 get_next_boot_track:
     jsr load_next_sector
