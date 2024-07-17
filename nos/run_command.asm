@@ -72,13 +72,24 @@ run_cmd_entry_load_content:
     print file_address_message
     jsr fs_read_file_byte
     lda r1
+    pha
     sta r2
     jsr fs_read_file_byte
     lda r1
+    pha
     sta r3
     jsr print_hex_byte
     lda r2
     jsr print_hex_byte
+
+    lda r3
+    cmp #$00
+    bne dont_exit
+    pla
+    pla
+    clc
+    bcc run_cmd_entry_exit
+    dont_exit:
 
     print file_size_message
     jsr fs_read_file_byte
@@ -117,7 +128,11 @@ run_cmd_skip_r3_increment:
     cmp r3
     bne run_cmd_store_next_byte
 
-jmp enter_monitor
+    pla
+    sta r3
+    pla
+    sta r2
+    jsr _run_cmd_trampoline
 
 run_cmd_entry_exit:
 
@@ -136,6 +151,9 @@ run_cmd_entry_exit:
     sta r0
 
     rts
+
+_run_cmd_trampoline:
+    jmp (r2)
 
 file_found_message:
     .byte $0a, $0d, " FILE FOUND", $00

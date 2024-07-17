@@ -338,12 +338,6 @@ fs_read_file_byte_exit:
 ;No return value, assumed to always work
 .global fs_rewind_file
 fs_rewind_file:
-
-;TESTING use this to examine state on the failing data sector read
-    lda #$00
-    sta r15
-;TESTING END
-
     ;Stash clobbered registers
     lda r0
     pha
@@ -428,6 +422,11 @@ fs_open_file:
     ;Push clobbered registers
     lda r1
     pha
+    ;TODO: Shouldn't need to clear this on every file open,
+    ;      should be updated when we load T/S sectors and stuff as well
+    lda #$00
+    sta sector_buffer_loaded_sector
+    sta sector_buffer_loaded_track
     ;Attempt to find the file from the passed-in name pointer
     jsr fs_find_file
     lda r0
