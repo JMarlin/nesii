@@ -25,9 +25,9 @@ fs_scan_catalog:
     jsr floppy_motor_wait
 
     ;Read the VTOC (track 0x11, sector 0x0) into a buffer for examination
-    lda #$00
+    lda #<sector_buffer
     sta floppy_data_ptr
-    lda #$90
+    lda #>sector_buffer
     sta floppy_data_ptr+1
     ldx #$11
     lda #$00
@@ -35,14 +35,14 @@ fs_scan_catalog:
 
 fs_catalog_chain_next:
     ;Read the next catalog sector
-    lda #$00
+    lda #<sector_buffer
     sta floppy_data_ptr
-    lda #$90
+    lda #>sector_buffer
     sta floppy_data_ptr+1
-    lda $9001
+    lda sector_buffer+1
     beq fs_catalog_chain_finished_exit
     tax
-    lda $9002
+    lda sector_buffer+2
     jsr floppy_read
 
     lda #$0B
@@ -64,7 +64,7 @@ fs_entry_process:
     lda r0
     pha
 
-    lda #$90
+    lda #>sector_buffer
     sta r5
     lda floppy_data_ptr
     sta r4
@@ -233,7 +233,6 @@ _fs_load_active_ts_list_sector:
     ldy #ofi_active_ts_sector_offset
     lda (open_file_info_ptr_0),y
     jsr floppy_read
-    jsr floppy_off
     rts
 
 
@@ -339,6 +338,12 @@ fs_read_file_byte_exit:
 ;No return value, assumed to always work
 .global fs_rewind_file
 fs_rewind_file:
+
+;TESTING use this to examine state on the failing data sector read
+    lda #$00
+    sta r15
+;TESTING END
+
     ;Stash clobbered registers
     lda r0
     pha

@@ -102,8 +102,6 @@ run_cmd_entry_load_content:
     sta r5
 
 run_cmd_store_next_byte:
-    ;TODO: for some reason, when we go to load the 7th sector of the file from the T/S list, 
-    ;      the system is hanging
     jsr fs_read_file_byte
     lda r1
     ldy #$00
