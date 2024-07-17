@@ -7,17 +7,17 @@
     sector           = $3d
     track            = $41
     text_buffer      = $0400
-    sector_buffer    = $0500
+    sector_buffer    = $0300
     text_index       = $50
     cmp_string       = $51
     cur_cmd_index    = $53
     command_address  = $54
     current_track    = $42
 
-    fixed_file_info_ptr  = $0600
+    fixed_file_info_ptr  = $00e0
     open_file_info_ptr_0 = $60
-    sector_buffer_loaded_track  = $61
-    sector_buffer_loaded_sector = $62
+    sector_buffer_loaded_track  = $62
+    sector_buffer_loaded_sector = $63
 
     ;The following zero-page locations are reserved
     ;for local use by subroutines

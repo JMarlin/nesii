@@ -1,4 +1,5 @@
 .segment "CODE"
+.include "fs.inc"
 .include "floppy.inc"
 .include "console.inc"
 .include "globals.inc"
@@ -48,8 +49,13 @@ fs_catalog_chain_next:
     sta floppy_data_ptr
 
 fs_entry_process:
+    ;Check for zero track number, which indicates empty record
     ldy #$00
     lda (floppy_data_ptr),y
+    beq fs_entry_process_next
+    ;Check for FF track number, which indicates deleted record
+    tax
+    inx
     beq fs_entry_process_next
 
 ;Call back to the user with the entry pointer in r5:r4
@@ -212,50 +218,114 @@ fs_find_file_exit:
     rts
 
 
-;No arguments, returns success(1)/failure(0) in r0 and byte value in r1
-;TODO: Currently doesn't traverse past the first T/S sector
-.global fs_read_file_byte
-fs_read_file_byte:
-    lda #<sector_buffer
-    sta r0
-    lda #>sector_buffer
-    sta r1
-    ldy open_file_byte_offset
-    lda (r0),y
-    pha
-    iny
-    sty open_file_byte_offset
-    bne fs_read_file_byte_exit
-;Byte offset rolled over, read the next sector
-;Read active file's first T/S sector
-    jsr floppy_on
-    jsr floppy_motor_wait
+;Currently takes no arguments and reads the active t/s list sector indicated in
+;open file 0 into the global sector buffer
+;In the future, should accept an open file info pointer and use the t/s list address
+;and sector buffer address from the open file info
+_fs_load_active_ts_list_sector:
     lda #<sector_buffer
     sta floppy_data_ptr
     lda #>sector_buffer
     sta floppy_data_ptr+1
-    ldx open_file_track
-    lda open_file_sector
+    ldy #ofi_active_ts_track_offset
+    lda (open_file_info_ptr_0),y
+    tax
+    ldy #ofi_active_ts_sector_offset
+    lda (open_file_info_ptr_0),y
     jsr floppy_read
-;Increment the open file's sector offset and load that sector
-    lda #<sector_buffer
-    sta floppy_data_ptr
-    lda #>sector_buffer
-    sta floppy_data_ptr+1
-    inc open_file_sector_offset
-    lda open_file_sector_offset
-    clc
-    asl
-    clc
-    adc #$0C
+    jsr floppy_off
+    rts
+
+
+;Expects a pointer to a sector buffer containing the loaded T/S list data in r1:r0
+;Gets the current entry offset from open file info 0 and assigns the value to which it
+;points to the active data sector fields of open file info 0
+_fs_load_data_sector_address_from_loaded_ts_list:
+    ldy #ofi_current_ts_entry_offset
+    lda (open_file_info_ptr_0),y
     tay
     lda (r0),y
     tax
     iny
     lda (r0),y
-    jsr floppy_read
-    jsr floppy_off
+    ldy #ofi_active_data_sector_offset
+    sta (open_file_info_ptr_0),y
+    ldy #ofi_active_data_track_offset
+    txa
+    sta (open_file_info_ptr_0),y
+    rts
+
+
+;No arguments, returns success(1)/failure(0) in r0 and byte value in r1
+;TODO: Currently doesn't traverse past the first T/S sector
+.global fs_read_file_byte
+fs_read_file_byte:
+    ;Set up r1:r0 as a base pointer into the data buffer
+    lda #<sector_buffer
+    sta r0
+    lda #>sector_buffer
+    sta r1
+    ;Grab the current file info struct's byte cursor
+    ldy #ofi_current_byte_offset
+    lda (open_file_info_ptr_0),y
+    ;Get the byte at the current cursor, stash on the stack for return on exit
+    tay
+    lda (r0),y
+    pha
+    ;Update the file info struct's byte cursor
+    iny
+    tya
+    ldy #ofi_current_byte_offset
+    sta (open_file_info_ptr_0),y
+;If we didn't roll over, exit and return the read value
+    cmp #$00
+    bne fs_read_file_byte_exit
+;Byte offset rolled over, time to load another sector
+;Read in the current T/S list sector since we'll need it whether we're doing a normal sector load
+;or whether we need to advance to the next T/S list sectors
+;TODO: maintain a sector buffer per open file structure rather than globally
+    jsr floppy_on
+    jsr floppy_motor_wait
+    jsr _fs_load_active_ts_list_sector
+;Increment (by a word) and load the current T/S list entry index
+    ldy #ofi_current_ts_entry_offset
+    lda (open_file_info_ptr_0),y
+    tax
+    inx
+    inx
+    txa
+    sta (open_file_info_ptr_0),y
+    bne fs_read_file_byte_load_data ;If we didn't fall off the end of the sector, skip loading the next T/S list
+;We ran out of T/S entries in the current T/S sector, time to grab the next one in the chain
+    lda #$0C ;Reset the t/s list entry index to the first
+    sta (open_file_info_ptr_0),y
+    ;Grab the next t/s list address from the currently loaded t/s list
+    ;Store it into the open file info and load it
+    ldy #tsl_next_ts_track_offset
+    lda (r0),y
+    ldy #ofi_active_ts_track_offset
+    sta (open_file_info_ptr_0),y
+    ldy #tsl_next_ts_sector_offset
+    lda (r0),y
+    ldy #ofi_active_ts_sector_offset
+    sta (open_file_info_ptr_0),y
+;Check if the track number for the next T/S list sector was zero, indicating end-of-chain
+    cmp #$00
+    bne fs_read_file_byte_next_list_exists
+    ;Hit end-of-ts-chain, return bad info
+    pla
+    lda #$00
+    sta r0
+    sta r1
+    rts
+fs_read_file_byte_next_list_exists:
+    jsr _fs_load_active_ts_list_sector
+fs_read_file_byte_load_data:
+;Proceed to load the data sector based on the active entry in the loaded t/s list
+    jsr _fs_load_data_sector_address_from_loaded_ts_list
+    jsr _fs_populate_sector_buffer
 fs_read_file_byte_exit:
+    jsr floppy_off
     pla
     sta r1
     lda #$01
@@ -269,33 +339,80 @@ fs_read_file_byte_exit:
 ;No return value, assumed to always work
 .global fs_rewind_file
 fs_rewind_file:
+    ;Stash clobbered registers
+    lda r0
+    pha
+    lda r1
+    pha
     ;Reset the active t/s list sector to the file's base t/s list sector
-    ldy ofi_base_ts_sector_offset
+    ldy #ofi_base_ts_sector_offset
     lda (r0),y
-    ldy ofi_active_ts_sector_offset
+    ldy #ofi_active_ts_sector_offset
     sta (r0),y
-    ldy ofi_base_ts_track_offset
+    ldy #ofi_base_ts_track_offset
     lda (r0),y
-    ldy ofi_active_ts_track_offset
+    ldy #ofi_active_ts_track_offset
     sta (r0),y
     ;Clear the file's current offset into the data buffer and current
     ;offset into the active T/S list entries
     lda #$00
-    ldy ofi_current_byte_offset
+    ldy #ofi_current_byte_offset
     sta (r0),y
-    ldy ofi_current_sector_offset
+    lda #$0C
+    ldy #ofi_current_ts_entry_offset
     sta (r0),y
     ;Look up the first T/S list TS entry and copy it into the active
     ;data sector TS address field
+    jsr floppy_on
+    jsr floppy_motor_wait
+    lda #<sector_buffer
+    sta r0
+    lda #>sector_buffer
+    sta r1
+    jsr _fs_load_active_ts_list_sector
+    jsr _fs_load_data_sector_address_from_loaded_ts_list
+    jsr _fs_populate_sector_buffer
+    jsr floppy_off
+    ;Restore clobbered registers
+    pla
+    sta r1
+    pla
+    sta r0
     rts
 
 
 ;Internal function for making sure the data buffer for the open file
 ;is popultated to match the currently active data sector speficied
 ;by the passed-in open file info
-;Accepts zero-page address of an open file info pointer in r0
+;Currently just always uses open file info 0
 ;No return value, assumed to always work
 _fs_populate_sector_buffer:
+    ldy #ofi_active_data_track_offset
+    lda (open_file_info_ptr_0),y
+    cmp sector_buffer_loaded_track
+    beq _fs_populate_sector_buffer_check_sector
+    bne _fs_populate_sector_buffer_load
+_fs_populate_sector_buffer_check_sector:
+    ldy #ofi_active_data_sector_offset
+    lda (open_file_info_ptr_0),y
+    cmp sector_buffer_loaded_sector
+    beq _fs_populate_sector_buffer_exit
+_fs_populate_sector_buffer_load:
+    ldy #ofi_active_data_track_offset
+    lda (open_file_info_ptr_0),y
+    sta sector_buffer_loaded_track
+    tax
+    ldy #ofi_active_data_sector_offset
+    lda (open_file_info_ptr_0),y
+    sta sector_buffer_loaded_sector
+    tay
+    lda #<sector_buffer
+    sta floppy_data_ptr
+    lda #>sector_buffer
+    sta floppy_data_ptr+1
+    tya
+    jsr floppy_read
+_fs_populate_sector_buffer_exit:
     rts
 
 
@@ -325,25 +442,18 @@ fs_open_file_exists:
     ;Stash initial T/S-list TS address in the open file info struct
     ldy #$00
     lda (r0),y
-    ldy ofi_active_ts_track_offset
+    ldy #ofi_base_ts_track_offset
     sta (open_file_info_ptr_0),y
     ldy #$01
     lda (r0),y
-    ldy ofi_active_ts_sector_offset
-    sta (open_file_info_ptr_0),y
-    lda #$ff
-    ldy ofi_current_byte_offset
-    sta (open_file_info_ptr_0),y
-    ldy ofi_current_sector_offset
+    ldy #ofi_base_ts_sector_offset
     sta (open_file_info_ptr_0),y
     ;Rewind the new file
-    lda #open_file_info_ptr_0
+    lda open_file_info_ptr_0
     sta r0
-    lda #$00
+    lda open_file_info_ptr_0+1
     sta r1
     jsr fs_rewind_file
-    ;Make sure the file's initial buffer is loaded
-    jsr _fs_populate_sector_buffer
     lda #$00
     sta r0
 fs_open_file_exit:

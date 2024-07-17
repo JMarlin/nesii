@@ -205,26 +205,6 @@ lda     IWM_MOTOR_ON,x
     ldy     #$00
     sty track
     sty sector
-    ldx     #$03
-CreateDecTabLoop:
-    stx     bits
-    txa
-    asl     A                 ;shift left, putting high bit in carry
-    bit     bits              ;does shifted version overlap?
-    beq     reject           ;no, doesn't have two adjacent 1s
-    ora     bits              ;merge
-    eor     #$ff              ;invert
-    and     #$7e              ;clear hi and lo bits
-check_dub0:
-    bcs     reject           ;initial hi bit set *or* adjacent 0 bits set
-    lsr     A                 ;shift right, low bit into carry
-    bne     check_dub0       ;if more bits in byte, loop
-    tya                       ;we have a winner... store Y-reg to memory
-    sta     CONV_TAB,x        ;actual lookup will be on bytes with hi bit set
-    iny                       ; so they'll read from CONV_TAB-128
-reject:
-    inx                       ;try next candidate
-    bpl     CreateDecTabLoop
 
     lda #$60
     sta     slot_index        ;keep this around
@@ -325,7 +305,7 @@ read_twos_loop:
 dat_twos_rdbyte1:
     ldy IWM_Q6_OFF,x ;ldy IWM_Q6_OFF,x
     bpl dat_twos_rdbyte1
-    eor $02d6,y
+    eor conv_tab-128,y
     ldy bits
     dey
     sta TWOS_BUFFER,y
@@ -339,7 +319,7 @@ read_sixes_loop:
 sixes_rdbyte2:
     ldy IWM_Q6_OFF,x
     bpl sixes_rdbyte2
-    eor CONV_TAB-128,y
+    eor conv_tab-128,y
     ldy bits
     sta (data_ptr),y
     iny
@@ -352,7 +332,7 @@ sixes_rdbyte2:
 checksum_rdbyte3:
     ldy IWM_Q6_OFF,x
     bpl checksum_rdbyte3
-    eor CONV_TAB-128,y
+    eor conv_tab-128,y
 another:
     beq Decode
     jmp ReadSector
@@ -458,11 +438,29 @@ IRQ_BRK_HANDLE:
     RTI
    
 regs:
-        .byte $30,$08,$00,$00
-        .byte $30,$08,$00,$00
-        .byte $80,$00,$00,$00
-        .byte $30,$00,$00,$00
-        .byte $00,$00,$00,$00
+    .byte $30,$08,$00,$00
+    .byte $30,$08,$00,$00
+    .byte $80,$00,$00,$00
+    .byte $30,$00,$00,$00
+    .byte $00,$00,$00,$00
+
+conv_tab:
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$00,$01
+    .byte $ff,$ff,$02,$03,$ff,$04,$05,$06
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$07,$08
+    .byte $ff,$ff,$ff,$09,$0a,$0b,$0c,$0d
+    .byte $ff,$ff,$0e,$0f,$10,$11,$12,$13
+    .byte $ff,$14,$15,$16,$17,$18,$19,$1a
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+    .byte $ff,$ff,$ff,$1b,$ff,$1c,$1d,$1e
+    .byte $ff,$ff,$ff,$1f,$ff,$ff,$20,$21
+    .byte $ff,$22,$23,$24,$25,$26,$27,$28
+    .byte $ff,$ff,$ff,$ff,$ff,$29,$2a,$2b
+    .byte $ff,$2c,$2d,$2e,$2f,$30,$31,$32
+    .byte $ff,$ff,$33,$34,$35,$36,$37,$38
+    .byte $ff,$39,$3a,$3b,$3c,$3d,$3e,$3f
 
 CHAR_TILES:
     .incbin "font.chr"

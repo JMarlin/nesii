@@ -92,18 +92,32 @@ run_cmd_entry_load_content:
     jsr print_hex_byte
 ;END TESTING
 
-    ldy #$00
-run_cmd_store_byte:
-    tya                         
-    pha
+    ;Calculate end-of-load address into r5:r4
+    clc
+    lda r4
+    adc r2
+    sta r4
+    lda r5
+    adc r3
+    sta r5
+
+run_cmd_store_next_byte:
+    ;TODO: for some reason, when we go to load the 7th sector of the file from the T/S list, 
+    ;      the system is hanging
     jsr fs_read_file_byte
-    pla
-    tay
     lda r1
+    ldy #$00
     sta (r2),y
-    iny
-    bne run_cmd_store_byte ;TODO: do loads past 256 bytes
-                           ;TODO: actually check for the end of the file
+    inc r2
+    bne run_cmd_skip_r3_increment
+    inc r3
+run_cmd_skip_r3_increment:
+    lda r4
+    cmp r2
+    bne run_cmd_store_next_byte
+    lda r5
+    cmp r3
+    bne run_cmd_store_next_byte
 
 jmp enter_monitor
 

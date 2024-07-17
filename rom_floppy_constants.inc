@@ -1,7 +1,6 @@
 STACK           = $0100  
-TWOS_BUFFER     = $0300    ;holds the 2-bit chunks
-CONV_TAB        = $0356   ;6+2 conversion table
-BOOT1           = $0400   ;buffer for next stage of loader
+TWOS_BUFFER     = $0200    ;holds the 2-bit chunks
+BOOT1           = $0300   ;buffer for next stage of loader
 IWM_PH0_OFF     = $c080             ;stepper motor control
 IWM_PH0_ON      = $c081             ;stepper motor control
 IWM_PH2_OFF     = $c084
