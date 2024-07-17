@@ -48,7 +48,6 @@ run_cmd_entry:
     jmp run_cmd_entry_exit
     
 run_cmd_file_exists:
-    print file_found_message
 
 ;Check file type and bomb out if it's not a binary
     ldy #$02
@@ -68,8 +67,6 @@ run_cmd_entry_load_content:
     sta r1
     jsr fs_open_file
 
-;TESTING: Grab and display the load address and size
-    print file_address_message
     jsr fs_read_file_byte
     lda r1
     pha
@@ -78,9 +75,6 @@ run_cmd_entry_load_content:
     lda r1
     pha
     sta r3
-    jsr print_hex_byte
-    lda r2
-    jsr print_hex_byte
 
     lda r3
     cmp #$00
@@ -91,17 +85,12 @@ run_cmd_entry_load_content:
     bcc run_cmd_entry_exit
     dont_exit:
 
-    print file_size_message
     jsr fs_read_file_byte
     lda r1
     sta r4
     jsr fs_read_file_byte
     lda r1
     sta r5
-    jsr print_hex_byte
-    lda r4
-    jsr print_hex_byte
-;END TESTING
 
     ;Calculate end-of-load address into r5:r4
     clc
@@ -155,17 +144,8 @@ run_cmd_entry_exit:
 _run_cmd_trampoline:
     jmp (r2)
 
-file_found_message:
-    .byte $0a, $0d, " FILE FOUND", $00
-
 file_not_found_message:
     .byte $0a, $0d, " FILE NOT FOUND", $00
 
 file_not_binary_message:
-    .byte ", NOT A BIN!", $00
-
-file_address_message:
-    .byte $0a, $0d, " ADDR: ", $00
-
-file_size_message:
-    .byte $0a, $0d, " SIZE: ", $00
+    .byte $0a, $0d, " NOT A BIN!", $00
