@@ -3,7 +3,7 @@
 .include "nos_calls.inc"
 
 .global run_cmd_str
-run_cmd_str: .asciiz "RUN"
+run_cmd_str: .byte "RUN", $00
 
 .global run_cmd_entry
 run_cmd_entry:

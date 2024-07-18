@@ -7,7 +7,7 @@ SHELL: ../../bin2dos.py shell.bin
 	../../bin2dos.py 0x8000 shell.bin SHELL
 
 shell.bin: shell.cfg $(SHELL_OBJECTS)
-	ld65 -o shell.bin -C shell.cfg $(SHELL_OBJECTS)
+	ld65 -m shell.map -o shell.bin -C shell.cfg $(SHELL_OBJECTS)
 
 %.o: %.asm $(SHELL_INCLUDES)
 	ca65 $<

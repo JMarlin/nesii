@@ -5,7 +5,7 @@
 dir_str_ptr = $c2
 
 .global dir_cmd_str
-dir_cmd_str: .asciiz "DIR"
+dir_cmd_str: .byte "DIR", $00
 
 .global dir_cmd_entry
 dir_cmd_entry:

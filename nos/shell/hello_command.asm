@@ -2,7 +2,7 @@
 .include "console.inc"
 
 .global hello_cmd_str
-hello_cmd_str: .asciiz "HELLO"
+hello_cmd_str: .byte "HELLO", $00
 
 .global hello_cmd_entry
 hello_cmd_entry:

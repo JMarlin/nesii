@@ -13,6 +13,8 @@ command_processor_entry:
     jsr console_init
     print startup_message
 
+    jmp enter_monitor
+
 prompt_loop:
 
     print prompt
@@ -107,6 +109,7 @@ process_command_no_match:
 
     print unknown_command_message
     print text_buffer
+    jmp enter_monitor
 
     rts
 
@@ -119,7 +122,7 @@ command_table:
     .word $0000
 
 startup_message:
-    .byte "OK", $00
+    .byte $0a, $0d, " NOS 0.0.2", $00
 
 prompt:
     .byte $0a, $0d
@@ -127,4 +130,4 @@ prompt:
 
 unknown_command_message:
     .byte $0A, $0D
-    .byte "?", $00
+    .byte " UNKNOWN COMMAND ", $00

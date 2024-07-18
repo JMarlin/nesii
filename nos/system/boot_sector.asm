@@ -6,17 +6,6 @@
 .include "../../startup_interface.inc"
 
 boot_sector_start:
-
-    ldy #$00
-move_bootsect:
-    lda $0400,Y
-    sta $8000,Y
-    iny
-    bne move_bootsect
-
-jmp $040E ;This is new_entry at the new location
-
-new_entry:
     print message
 
 load_boot_tracks:
@@ -34,5 +23,4 @@ get_next_boot_track:
     jmp system_startup
 
 message:
-    .byte $0A, $0D
-    .byte "LOADING NOS", $00
+    .byte "NOS", $00

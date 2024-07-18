@@ -2,7 +2,7 @@
 .include "console.inc"
 
 .global echo_cmd_str
-echo_cmd_str: .asciiz "ECHO"
+echo_cmd_str: .byte "ECHO", $00
 
 .global echo_cmd_entry
 echo_cmd_entry:

@@ -1,6 +1,6 @@
 BIOS_OBJECTS = bios.o char_io.o monitor.o floppy.o
 NOS_OBJECTS = nos/command_processor.o nos/dir_command.o nos/fs.o nos/mon_command.o nos/run_command.o nos/console.o
-ROM_EMU_DEVICE = /dev/cu.usbmodem21301
+ROM_EMU_DEVICE = /dev/cu.usbmodem21401
 
 all: nesii_trunc.bin
 
