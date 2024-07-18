@@ -1,15 +1,11 @@
 .segment "CODE"
-.include "globals.inc"
+.include "../globals.inc"
 .include "console.inc"
 .include "hello_command.inc"
 .include "mon_command.inc"
 .include "dir_command.inc"
 .include "echo_command.inc"
 .include "run_command.inc"
-
-.global system_startup
-system_startup:
-    jsr floppy_init
 
 .global command_processor_entry
 command_processor_entry:
@@ -115,10 +111,10 @@ process_command_no_match:
     rts
 
 command_table:
-;    .word hello_cmd_str, hello_cmd_entry
+    .word hello_cmd_str, hello_cmd_entry
     .word mon_cmd_str,   mon_cmd_entry
     .word dir_cmd_str,   dir_cmd_entry
-;    .word echo_cmd_str,  echo_cmd_entry
+    .word echo_cmd_str,  echo_cmd_entry
     .word run_cmd_str,   run_cmd_entry
     .word $0000
 

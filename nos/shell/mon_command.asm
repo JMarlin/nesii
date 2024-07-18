@@ -1,5 +1,5 @@
 .segment "CODE"
-.include "rom_constants.inc"
+.include "../rom_constants.inc"
 
 .global mon_cmd_str
 mon_cmd_str: .asciiz "MON"

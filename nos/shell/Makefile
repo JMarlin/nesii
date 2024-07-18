@@ -1,9 +1,13 @@
-SYSTEM_OBJECTS = boot_sector.o fs.o
+SHELL_OBJECTS = entry.o command_processor.o dir_command.o echo_command.o hello_command.o mon_command.o run_command.o
+SHELL_INCLUDES = command_processor.inc dir_command.inc echo_command.inc hello_command.inc mon_command.inc run_command.inc ../globals.inc ../rom_constants.inc
 
-all: system.bin
+all: SHELL
 
-system.bin: system.cfg $(SYSTEM_OBJECTS)
-	ld65 -o system.bin -C system.cfg $(SYSTEM_OBJECTS)
+SHELL: ../../bin2dos.py shell.bin
+	../../bin2dos.py 0x8000 shell.bin SHELL
 
-%.o: %.asm
+shell.bin: shell.cfg $(SHELL_OBJECTS)
+	ld65 -o shell.bin -C shell.cfg $(SHELL_OBJECTS)
+
+%.o: %.asm $(SHELL_INCLUDES)
 	ca65 $<
