@@ -1,8 +1,8 @@
 .segment "CODE"
 .include "fs.inc"
-.include "rom_constants.inc"
+.include "../rom_constants.inc"
 .include "console.inc"
-.include "globals.inc"
+.include "../globals.inc"
 
 
 ;Expects r1:r0 to contain a pointer to a callback routine and r3:r2
