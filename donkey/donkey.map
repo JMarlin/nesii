@@ -1,0 +1,31 @@
+Modules list:
+-------------
+entry.o:
+    ENTRY             Offs=000000  Size=000003  Align=00001  Fill=0000
+launcher.o:
+    CODE              Offs=000000  Size=00005F  Align=00001  Fill=0000
+
+
+Segment list:
+-------------
+Name                   Start     End    Size  Align
+----------------------------------------------------
+ENTRY                 000300  000302  000003  00001
+CODE                  000304  000362  00005F  00001
+
+
+Exports list by name:
+---------------------
+launcher_entry            000304 RLA    
+
+
+Exports list by value:
+----------------------
+launcher_entry            000304 RLA    
+
+
+Imports list:
+-------------
+launcher_entry (launcher.o):
+    entry.o                   launcher.inc(4)
+
