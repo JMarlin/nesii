@@ -1,6 +1,7 @@
 .segment "CODE"
 .include "fs.inc"
 .include "../globals.inc"
+.include "../rom_constants.inc"
 
 .global binary_loader_load
 binary_loader_load:
@@ -57,8 +58,10 @@ binary_loader_load_load_content:
     ;Get the file load size
     jsr fs_read_file_byte
     lda r1
-    sta r0
+    pha
     jsr fs_read_file_byte
+    pla
+    sta r0
     ;Calculate end-of-load address into r1:r0
     clc
     lda r0
@@ -71,10 +74,14 @@ binary_loader_load_load_content:
 binary_loader_load_store_next_byte:
     lda r1
     pha
+    lda r0
+    pha
     jsr fs_read_file_byte
     lda r1
     ldy #$00
     sta (r2),y
+    pla
+    sta r0
     pla
     sta r1
     inc r2

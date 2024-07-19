@@ -256,7 +256,6 @@ _fs_load_data_sector_address_from_loaded_ts_list:
 
 
 ;No arguments, returns success(1)/failure(0) in r0 and byte value in r1
-;TODO: Currently doesn't traverse past the first T/S sector
 .global fs_read_file_byte
 fs_read_file_byte:
     ;Set up r1:r0 as a base pointer into the data buffer

@@ -13,8 +13,6 @@ command_processor_entry:
     jsr console_init
     print startup_message
 
-    jmp enter_monitor
-
 prompt_loop:
 
     print prompt

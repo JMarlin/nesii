@@ -11,8 +11,7 @@ system_startup:
     sta r1
     jsr binary_loader_load
 ;TODO: Check to see if the page number returned was zero and bail if so
-    jmp enter_monitor
-    ;jsr _shell_entry_trampoline
+    jsr _shell_entry_trampoline
     jmp system_startup
 
 _shell_entry_trampoline:
