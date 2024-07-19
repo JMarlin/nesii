@@ -6,13 +6,12 @@
     data_ptr         = $26
     sector           = $3d
     track            = $41
-    text_buffer      = $0400
-    sector_buffer    = $0300
+    text_buffer      = $0300
+    sector_buffer    = $0400
     text_index       = $50
     cmp_string       = $51
     cur_cmd_index    = $53
     command_address  = $54
-    current_track    = $42
 
     fixed_file_info_ptr  = $00e0
     open_file_info_ptr_0 = $60

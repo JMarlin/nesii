@@ -1,8 +1,8 @@
 .segment "CODE"
 .include "fs.inc"
-.include "floppy.inc"
+.include "../rom_constants.inc"
 .include "console.inc"
-.include "globals.inc"
+.include "../globals.inc"
 
 
 ;Expects r1:r0 to contain a pointer to a callback routine and r3:r2
@@ -26,9 +26,9 @@ fs_scan_catalog:
 
     ;Read the VTOC (track 0x11, sector 0x0) into a buffer for examination
     lda #<sector_buffer
-    sta floppy_data_ptr
+    sta data_ptr
     lda #>sector_buffer
-    sta floppy_data_ptr+1
+    sta data_ptr+1
     ldx #$11
     lda #$00
     jsr floppy_read
@@ -36,9 +36,9 @@ fs_scan_catalog:
 fs_catalog_chain_next:
     ;Read the next catalog sector
     lda #<sector_buffer
-    sta floppy_data_ptr
+    sta data_ptr
     lda #>sector_buffer
-    sta floppy_data_ptr+1
+    sta data_ptr+1
     lda sector_buffer+1
     beq fs_catalog_chain_finished_exit
     tax
@@ -46,12 +46,12 @@ fs_catalog_chain_next:
     jsr floppy_read
 
     lda #$0B
-    sta floppy_data_ptr
+    sta data_ptr
 
 fs_entry_process:
     ;Check for zero track number, which indicates empty record
     ldy #$00
-    lda (floppy_data_ptr),y
+    lda (data_ptr),y
     beq fs_entry_process_next
     ;Check for FF track number, which indicates deleted record
     tax
@@ -66,7 +66,7 @@ fs_entry_process:
 
     lda #>sector_buffer
     sta r5
-    lda floppy_data_ptr
+    lda data_ptr
     sta r4
     jsr fs_callback_trampoline
 
@@ -79,10 +79,10 @@ fs_entry_process:
     beq fs_catalog_chain_callback_exit
 
 fs_entry_process_next:
-    lda floppy_data_ptr
+    lda data_ptr
     clc
     adc #$23
-    sta floppy_data_ptr
+    sta data_ptr
     bne fs_entry_process
     beq fs_catalog_chain_next
 
@@ -224,9 +224,9 @@ fs_find_file_exit:
 ;and sector buffer address from the open file info
 _fs_load_active_ts_list_sector:
     lda #<sector_buffer
-    sta floppy_data_ptr
+    sta data_ptr
     lda #>sector_buffer
-    sta floppy_data_ptr+1
+    sta data_ptr+1
     ldy #ofi_active_ts_track_offset
     lda (open_file_info_ptr_0),y
     tax
@@ -256,7 +256,6 @@ _fs_load_data_sector_address_from_loaded_ts_list:
 
 
 ;No arguments, returns success(1)/failure(0) in r0 and byte value in r1
-;TODO: Currently doesn't traverse past the first T/S sector
 .global fs_read_file_byte
 fs_read_file_byte:
     ;Set up r1:r0 as a base pointer into the data buffer
@@ -406,9 +405,9 @@ _fs_populate_sector_buffer_load:
     sta sector_buffer_loaded_sector
     tay
     lda #<sector_buffer
-    sta floppy_data_ptr
+    sta data_ptr
     lda #>sector_buffer
-    sta floppy_data_ptr+1
+    sta data_ptr+1
     tya
     jsr floppy_read
 _fs_populate_sector_buffer_exit:

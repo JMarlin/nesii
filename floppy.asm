@@ -1,6 +1,7 @@
 .segment "CODE"
-.include "rom_constants.inc"
-.include "globals.inc"
+.include "rom_floppy_constants.inc"
+.global MON_WAIT
+.global ReadSector
 
 .global floppy_init
 floppy_init:
@@ -14,7 +15,7 @@ floppy_motor_wait:
 floppy_motor_wait_top:
     txa
     pha
-    jsr monitor_wait
+    jsr MON_WAIT
     pla
     tax
     dex
@@ -24,14 +25,14 @@ floppy_motor_wait_top:
 .global floppy_on
 floppy_on:
     ldx #$60
-    lda iwm_motor_on,X
+    lda IWM_MOTOR_ON,X
     rts
 
 
 .global floppy_off
 floppy_off:
     ldx #$60
-    lda iwm_motor_off,X
+    lda IWM_MOTOR_OFF,X
     rts
 
 
@@ -49,7 +50,7 @@ floppy_read:
     lda sector_skew_table,y
     sta sector
     ldx #$60
-    jsr read_sector
+    jsr ReadSector
     rts
 
 
@@ -59,7 +60,7 @@ floppy_seek:
 floppy_seek_top:
     ;If we are already at the requested track, nothing to do
     pla
-    cmp current_track
+    cmp cur_track
     pha
     beq floppy_seek_done
     bcc floppy_seek_step_back
@@ -77,7 +78,7 @@ floppy_seek_done:
 
 
 step_forward:
-    lda     current_track
+    lda     cur_track
     cmp     #$23
     beq     step_forward_done
     and     #$01
@@ -85,42 +86,42 @@ step_forward:
     asl     A
     ora     #$62
     tax
-    lda     iwm_ph0_on,x      
-    jsr     monitor_wait      
-    lda     iwm_ph0_off,x     
+    lda     IWM_PH0_ON,x      
+    jsr     MON_WAIT      
+    lda     IWM_PH0_OFF,x     
     inx
     inx
     txa
     and     #$F7
     tax
-    lda     iwm_ph0_on,x
-    jsr     monitor_wait
-    lda     iwm_ph0_off,x
-    inc     current_track
+    lda     IWM_PH0_ON,x
+    jsr     MON_WAIT
+    lda     IWM_PH0_OFF,x
+    inc     cur_track
 step_forward_done:
     rts
 
 
 step_back:
-    lda     current_track
+    lda     cur_track
     beq     step_back_done
     and     #$01
     asl     
     asl     
     ora     #$60
     tax
-    lda     iwm_ph0_on,x      
-    jsr     monitor_wait      
-    lda     iwm_ph0_off,x     
+    lda     IWM_PH0_ON,x      
+    jsr     MON_WAIT      
+    lda     IWM_PH0_OFF,x     
     dex
     dex
     txa
     and     #$f7
     tax
-    lda     iwm_ph0_on,x
-    jsr     monitor_wait
-    lda     iwm_ph0_off,x
-    dec     current_track
+    lda     IWM_PH0_ON,x
+    jsr     MON_WAIT
+    lda     IWM_PH0_OFF,x
+    dec     cur_track
 step_back_done:
     rts
 

@@ -1,0 +1,1 @@
+.global binary_loader_load

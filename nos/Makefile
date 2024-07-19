@@ -1,12 +1,22 @@
-NOS_OBJECTS = boot_sector.o command_processor.o dir_command.o floppy.o fs.o hello_command.o mon_command.o echo_command.o run_command.o console.o
+all: nos.do
 
-all: nos.dsk
+.PHONY: system
+system: 
+	make -C system
 
-nos.dsk: nos.bin ../skew-dsk.py
-	../skew-dsk.py nos.bin nos.dsk
+.PHONY: shell
+shell:
+	make -C shell
 
-nos.bin: nos_link.cfg $(NOS_OBJECTS)
-	ld65 -o nos.bin -C nos_link.cfg $(NOS_OBJECTS)
-
-%.o: %.asm
-	ca65 $<
+nos.do: system shell
+	~/Downloads/cp2_1.0.2_osx-x64_fd/cp2 cdi --overwrite nos_data.do 140k DOS	
+	~/Downloads/cp2_1.0.2_osx-x64_fd/cp2 add nos_data.do shell/SHELL
+	~/Downloads/cp2_1.0.2_osx-x64_fd/cp2 sa nos_data.do SHELL type=bin
+	dd if=nos_data.do of=nos_data.bin bs=256 skip=16
+	dd if=/dev/zero of=nos_boot_padding.bin bs=256 count=556
+	cat system/system.bin > nos_boot_only.bin
+	cat nos_boot_padding.bin >> nos_boot_only.bin
+	../skew-dsk.py nos_boot_only.bin nos_boot_only.do
+	dd if=nos_boot_only.do of=nos_boot_track.bin bs=256 count=16
+	cat nos_boot_track.bin > nos.do
+	cat nos_data.bin >> nos.do
