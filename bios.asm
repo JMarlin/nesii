@@ -184,8 +184,6 @@ TILE_LOAD_LOOP:
     LDA #$00
     STA $4000
 
-.GLOBAL init
-
 lda #<BOOT_MSG
 sta $03
 lda #>BOOT_MSG

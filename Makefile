@@ -4,6 +4,10 @@ ROM_EMU_DEVICE = /dev/cu.usbmodem21401
 
 all: nesii_trunc.bin
 
+nesii_bios.nes: nesii_trunc.bin bios_ines_header.bin
+	cat bios_ines_header.bin > nesii_bios.nes
+	cat nesii_trunc.bin >> nesii_bios.nes
+
 romemu: nesii_trunc.bin
 	../28pi256/upload.py $(ROM_EMU_DEVICE) nesii_trunc.bin
 

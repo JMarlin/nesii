@@ -104,11 +104,8 @@ exec_cmd:
     jmp (command_address) ;Note: Callee should expect pointer to args in r1:r0
 
 process_command_no_match:
-
     print unknown_command_message
     print text_buffer
-    jmp enter_monitor
-
     rts
 
 command_table:

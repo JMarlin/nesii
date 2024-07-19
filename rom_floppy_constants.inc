@@ -23,3 +23,4 @@ cur_track  = $42
 cur_sector = $43
 
 .global load_boot_sector
+.global init
