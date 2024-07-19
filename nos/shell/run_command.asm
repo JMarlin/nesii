@@ -1,6 +1,6 @@
 .segment "CODE"
 .include "console.inc"
-.include "nos_calls.inc"
+.include "../nos_calls.inc"
 
 .global run_cmd_str
 run_cmd_str: .byte "RUN", $00

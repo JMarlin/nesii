@@ -368,19 +368,17 @@ HALT:
 
 .global MON_WAIT
 MON_WAIT:
-    TYA
-    LDY #$02 ;NOTE: We do this twice because of the possibility
-             ;that we're coming into vblank JUST as we enter this
-             ;function and therefore might not end up waiting
-             ;any time at all
-MON_TOP:
-    BIT $2002
-    BPL MON_TOP
-    DEY
-    BNE MON_TOP
-    TAY
-    LDA #$00
-    RTS
+    lda #$f0
+    sta $da
+wait_loop_b:
+    lda #$00
+    sta $db
+wait_loop_a:
+    inc $db
+    bne wait_loop_a
+    inc $da
+    bne wait_loop_b
+    rts
 
 ;NOTE: When the drive is initialized, we are aligned with phase-0
 ;      Therefore, we need to step to the next ODD numbered step FIRST
