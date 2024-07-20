@@ -11,15 +11,17 @@ floppy_init:
 
 .global floppy_motor_wait
 floppy_motor_wait:
-    ldx #$30
-floppy_motor_wait_top:
-    txa
-    pha
-    jsr MON_WAIT
-    pla
-    tax
-    dex
-    bne floppy_motor_wait_top
+    ldx #$60
+floppy_motor_wait_read_first:
+    lda IWM_Q6_OFF,x
+    bpl floppy_motor_wait_read_first
+    sta $df ;TODO: actually properly push clobbered zp reg and use symbol
+floppy_motor_wait_read_second:
+    lda IWM_Q6_OFF,x
+    bpl floppy_motor_wait_read_second
+    cmp $df ;TODO: actually properly push clobbered zp reg and use symbol
+    beq floppy_motor_wait_read_second
+    rts
 
 
 .global floppy_on
