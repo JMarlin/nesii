@@ -3,7 +3,7 @@
 .include "../globals.inc"
 .include "system_entry.inc"
 .include "console.inc"
-.include "../../startup_interface.inc"
+.include "../../bios/startup_interface.inc"
 
 boot_sector_start:
     print message
