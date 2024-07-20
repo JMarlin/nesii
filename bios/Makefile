@@ -1,6 +1,7 @@
 BIOS_OBJECTS = bios.o char_io.o monitor.o floppy.o
 NOS_OBJECTS = nos/command_processor.o nos/dir_command.o nos/fs.o nos/mon_command.o nos/run_command.o nos/console.o
 ROM_EMU_DEVICE = /dev/cu.usbmodem21401
+ROM_EMU_TOOL = ~/code/28pi256/upload.py
 
 .PHONY: all
 all: nesii_trunc.bin
@@ -16,10 +17,10 @@ nesii_bios.nes: nesii_trunc.bin blob/bios_ines_header.bin
 	cat nesii_trunc.bin >> nesii_bios.nes
 
 romemu: nesii_trunc.bin
-	../28pi256/upload.py $(ROM_EMU_DEVICE) nesii_trunc.bin
+	$(ROM_EMU_TOOL) $(ROM_EMU_DEVICE) nesii_trunc.bin
 
 nos_romemu: nosrom_trunc.bin
-	../28pi256/upload.py $(ROM_EMU_DEVICE) nosrom_trunc.bin
+	$(ROM_EMU_TOOL) $(ROM_EMU_DEVICE) nosrom_trunc.bin
 
 #This is a ROM that runs NOS code out of the ROM rather
 #than trying to load and boot from the floppy
