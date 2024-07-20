@@ -5,6 +5,12 @@
 .include "startup_interface.inc"
 .include "floppy.inc"
 
+;I should probably make a note here, since I cleaned up the sources a bunch,
+;that this file is an absolute mess and should be broken up
+;If you're wondering why, it's because this file was the origin of the
+;whole codebase and as such doesn't really serve much purposes now
+;aside from being the entry point and a general bucket of old but critical stuff
+
 ENTRY:
 ;Turn off interrupts and decimal mode
     SEI
