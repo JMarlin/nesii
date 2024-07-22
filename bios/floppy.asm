@@ -1,5 +1,6 @@
 .segment "CODE"
 .include "rom_floppy_constants.inc"
+.include "globals.inc"
 .global MON_WAIT
 .global ReadSector
 
@@ -11,16 +12,50 @@ floppy_init:
 
 .global floppy_motor_wait
 floppy_motor_wait:
+    lda #$00
+    sta r15
+    lda #$40
+    sta r14
+floppy_motor_wait_retry_outer:
+    inc r14
+    beq floppy_motor_wait_exit_fail
+floppy_motor_wait_retry_inner:
+    inc r15
+    beq floppy_motor_wait_retry_outer
+    jsr _floppy_motor_wait_try_read_header
+    bne floppy_motor_wait_retry_inner
+    lda #$00
+    sta r15
+    rts
+floppy_motor_wait_exit_fail:
+    lda #$01
+    sta r15
+    rts
+
+_floppy_motor_wait_try_read_header:
     ldx #$60
-floppy_motor_wait_read_first:
-    lda IWM_Q6_OFF,x
-    bpl floppy_motor_wait_read_first
-    sta $df ;TODO: actually properly push clobbered zp reg and use symbol
-floppy_motor_wait_read_second:
-    lda IWM_Q6_OFF,x
-    bpl floppy_motor_wait_read_second
-    cmp $df ;TODO: actually properly push clobbered zp reg and use symbol
-    beq floppy_motor_wait_read_second
+    ldy #$00
+floppy_motor_wait_try_read_first:
+    iny
+    beq floppy_motor_wait_try_read_header_exit_fail
+    lda $c0ec
+    bpl floppy_motor_wait_try_read_first
+    cmp #$d5
+    bne floppy_motor_wait_try_read_header_exit_fail
+    nop
+    nop
+    ldy #$00
+floppy_motor_wait_try_read_second:
+    iny
+    beq floppy_motor_wait_try_read_header_exit_fail
+    lda $c0ec
+    bpl floppy_motor_wait_try_read_second
+    cmp #$aa
+    bne floppy_motor_wait_try_read_header_exit_fail
+    lda #$00
+    rts
+floppy_motor_wait_try_read_header_exit_fail:
+    lda #$01
     rts
 
 

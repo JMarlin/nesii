@@ -4,6 +4,7 @@
 .include "rom_floppy_constants.inc"
 .include "startup_interface.inc"
 .include "floppy.inc"
+.include "globals.inc"
 
 ;I should probably make a note here, since I cleaned up the sources a bunch,
 ;that this file is an absolute mess and should be broken up
@@ -428,6 +429,17 @@ next_sector_done:
 
 .global load_boot_sector
 load_boot_sector:
+    jsr floppy_motor_wait
+    lda r15
+    beq run_boot_sector
+    jsr floppy_off
+    lda #<NODISK_MSG
+    sta string_ptr
+    lda #>NODISK_MSG
+    sta string_ptr+1
+    jsr PRINTSTR
+    jmp init
+run_boot_sector:
     lda     #$00
     sta     data_ptr          ;Store page-aligned
     lda     #>BOOT1           ;Target is the NES RAM boot area
@@ -437,6 +449,9 @@ load_boot_sector:
     
 BOOT_MSG:
     .ASCIIZ "LOADING..."
+
+NODISK_MSG:
+    .ASCIIZ "NO DISK"
 
 IRQ_BRK_HANDLE:
     RTI
