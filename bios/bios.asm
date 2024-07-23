@@ -249,7 +249,12 @@ seek_loop:
 ReadSector:   clc
 .GLOBAL ReadSector
 ReadSector_C: php
-rdbyte1_start: ldx #$00
+              lda #$00
+              sta r15
+rdbyte1_start:
+              inc r15
+              beq ReadSector_exit_fail_a
+              ldx #$00
 rdbyte1:      inx
               beq ReadSector_exit_fail_a
 b:            lda IWM_Q6_OFF
@@ -291,7 +296,7 @@ hdr_loop:
     ldx #$00
 adr_hdr_rdbyte1:
     inx
-    beq ReadSector_exit_fail
+    beq ReadSector_exit_fail_a
 e:  lda IWM_Q6_OFF
     bpl adr_hdr_rdbyte1
     rol A
@@ -301,7 +306,7 @@ e:  lda IWM_Q6_OFF
     ldx #$00
  adr_hdr_rdbyte2:
     inx
-    beq ReadSector_exit_fail
+    beq ReadSector_exit_fail_a
 j:  lda IWM_Q6_OFF
     bpl adr_hdr_rdbyte2
     and bits
@@ -312,7 +317,7 @@ j:  lda IWM_Q6_OFF
     bne ReadSector ;TODO: only retry this ~32 times -- after that, we know we've failed to find the sector
     lda found_track
     cmp track
-    bne ReadSector_exit_fail
+    bne ReadSector_exit_fail_a
     bcs ReadSector_C
 
 FoundData:

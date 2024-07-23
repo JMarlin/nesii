@@ -38,7 +38,7 @@ floppy_read:
 ;Stash clobbered registers
     lda r0
     pha
-    lda #$fe
+    lda #$00
     sta r0
 floppy_read_retry:
     inc r0
