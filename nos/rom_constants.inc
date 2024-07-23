@@ -13,7 +13,6 @@
     floppy_init       = $ffe4
     floppy_off        = $ffe8
     floppy_on         = $ffec
-    floppy_motor_wait = $fff0
 
     cart_switches    = $d000
     iwm_ph0_off      = $c080

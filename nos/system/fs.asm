@@ -22,7 +22,6 @@ fs_scan_catalog:
     pha
 
     jsr floppy_on
-    jsr floppy_motor_wait
 
     ;Read the VTOC (track 0x11, sector 0x0) into a buffer for examination
     lda #<sector_buffer
@@ -31,7 +30,7 @@ fs_scan_catalog:
     sta data_ptr+1
     ldx #$11
     lda #$00
-    jsr floppy_read
+    jsr floppy_read ;TODO: Exit on failure
 
 fs_catalog_chain_next:
     ;Read the next catalog sector
@@ -43,7 +42,7 @@ fs_catalog_chain_next:
     beq fs_catalog_chain_finished_exit
     tax
     lda sector_buffer+2
-    jsr floppy_read
+    jsr floppy_read ;TODO: Exit on failure
 
     lda #$0B
     sta data_ptr
@@ -232,7 +231,7 @@ _fs_load_active_ts_list_sector:
     tax
     ldy #ofi_active_ts_sector_offset
     lda (open_file_info_ptr_0),y
-    jsr floppy_read
+    jsr floppy_read ;TODO: Exit on failure
     rts
 
 
@@ -283,7 +282,6 @@ fs_read_file_byte:
 ;or whether we need to advance to the next T/S list sectors
 ;TODO: maintain a sector buffer per open file structure rather than globally
     jsr floppy_on
-    jsr floppy_motor_wait
     jsr _fs_load_active_ts_list_sector
 ;Increment (by a word) and load the current T/S list entry index
     ldy #ofi_current_ts_entry_offset
@@ -362,7 +360,6 @@ fs_rewind_file:
     ;Look up the first T/S list TS entry and copy it into the active
     ;data sector TS address field
     jsr floppy_on
-    jsr floppy_motor_wait
     lda #<sector_buffer
     sta r0
     lda #>sector_buffer
@@ -409,7 +406,7 @@ _fs_populate_sector_buffer_load:
     lda #>sector_buffer
     sta data_ptr+1
     tya
-    jsr floppy_read
+    jsr floppy_read ;TODO: Exit on failure
 _fs_populate_sector_buffer_exit:
     rts
 

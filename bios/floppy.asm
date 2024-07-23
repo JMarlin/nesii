@@ -10,84 +10,47 @@ floppy_init:
     rts
 
 
-.global floppy_motor_wait
-floppy_motor_wait:
-    lda #$00
-    sta r15
-    lda #$40
-    sta r14
-floppy_motor_wait_retry_outer:
-    inc r14
-    beq floppy_motor_wait_exit_fail
-floppy_motor_wait_retry_inner:
-    inc r15
-    beq floppy_motor_wait_retry_outer
-    jsr _floppy_motor_wait_try_read_header
-    bne floppy_motor_wait_retry_inner
-    lda #$00
-    sta r15
-    rts
-floppy_motor_wait_exit_fail:
-    lda #$01
-    sta r15
-    rts
-
-_floppy_motor_wait_try_read_header:
-    ldx #$60
-    ldy #$00
-floppy_motor_wait_try_read_first:
-    iny
-    beq floppy_motor_wait_try_read_header_exit_fail
-    lda $c0ec
-    bpl floppy_motor_wait_try_read_first
-    cmp #$d5
-    bne floppy_motor_wait_try_read_header_exit_fail
-    nop
-    nop
-    ldy #$00
-floppy_motor_wait_try_read_second:
-    iny
-    beq floppy_motor_wait_try_read_header_exit_fail
-    lda $c0ec
-    bpl floppy_motor_wait_try_read_second
-    cmp #$aa
-    bne floppy_motor_wait_try_read_header_exit_fail
-    lda #$00
-    rts
-floppy_motor_wait_try_read_header_exit_fail:
-    lda #$01
-    rts
-
-
 .global floppy_on
 floppy_on:
-    ldx #$60
-    lda IWM_MOTOR_ON,X
+    lda IWM_MOTOR_ON
     rts
 
 
 .global floppy_off
 floppy_off:
-    ldx #$60
-    lda IWM_MOTOR_OFF,X
+    lda IWM_MOTOR_OFF
     rts
 
 
 ;Expects track number in X, sector number in A
 ;data_ptr is the target it will read into
-.global floppy_read
+.global floppy_read 
 floppy_read:
     pha
-    txa
+    jsr floppy_on
+    txa 
     jsr floppy_seek
-    tax
     sta track
     pla
     tay
     lda sector_skew_table,y
     sta sector
-    ldx #$60
+;Stash clobbered registers
+    lda r0
+    pha
+    lda #$fe
+    sta r0
+floppy_read_retry:
+    inc r0
+    beq floppy_read_exit
     jsr ReadSector
+    lda r15
+    bne floppy_read_retry
+floppy_read_exit:
+    jsr floppy_off
+;Restore clobbered register
+    pla
+    sta r0
     rts
 
 
@@ -108,7 +71,6 @@ floppy_seek_step_back:
     jsr step_back
     clc
     bcc floppy_seek_top
-
 floppy_seek_done:
     pla
     rts
