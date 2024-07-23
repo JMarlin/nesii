@@ -1,5 +1,6 @@
 .segment "CODE"
 .include "rom_floppy_constants.inc"
+.include "globals.inc"
 .global MON_WAIT
 .global ReadSector
 
@@ -9,50 +10,47 @@ floppy_init:
     rts
 
 
-.global floppy_motor_wait
-floppy_motor_wait:
-    ldx #$60
-floppy_motor_wait_read_first:
-    lda IWM_Q6_OFF,x
-    bpl floppy_motor_wait_read_first
-    sta $df ;TODO: actually properly push clobbered zp reg and use symbol
-floppy_motor_wait_read_second:
-    lda IWM_Q6_OFF,x
-    bpl floppy_motor_wait_read_second
-    cmp $df ;TODO: actually properly push clobbered zp reg and use symbol
-    beq floppy_motor_wait_read_second
-    rts
-
-
 .global floppy_on
 floppy_on:
-    ldx #$60
-    lda IWM_MOTOR_ON,X
+    lda IWM_MOTOR_ON
     rts
 
 
 .global floppy_off
 floppy_off:
-    ldx #$60
-    lda IWM_MOTOR_OFF,X
+    lda IWM_MOTOR_OFF
     rts
 
 
 ;Expects track number in X, sector number in A
 ;data_ptr is the target it will read into
-.global floppy_read
+.global floppy_read 
 floppy_read:
     pha
-    txa
+    jsr floppy_on
+    txa 
     jsr floppy_seek
-    tax
     sta track
     pla
     tay
     lda sector_skew_table,y
     sta sector
-    ldx #$60
+;Stash clobbered registers
+    lda r0
+    pha
+    lda #$00
+    sta r0
+floppy_read_retry:
+    inc r0
+    beq floppy_read_exit
     jsr ReadSector
+    lda r15
+    bne floppy_read_retry
+floppy_read_exit:
+    jsr floppy_off
+;Restore clobbered register
+    pla
+    sta r0
     rts
 
 
@@ -73,7 +71,6 @@ floppy_seek_step_back:
     jsr step_back
     clc
     bcc floppy_seek_top
-
 floppy_seek_done:
     pla
     rts

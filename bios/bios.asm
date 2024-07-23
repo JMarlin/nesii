@@ -4,6 +4,7 @@
 .include "rom_floppy_constants.inc"
 .include "startup_interface.inc"
 .include "floppy.inc"
+.include "globals.inc"
 
 ;I should probably make a note here, since I cleaned up the sources a bunch,
 ;that this file is an absolute mess and should be broken up
@@ -248,22 +249,31 @@ seek_loop:
 ReadSector:   clc
 .GLOBAL ReadSector
 ReadSector_C: php
-rdbyte1:      lda IWM_Q6_OFF,x
+              lda #$00
+              sta r15
+rdbyte1_start:
+              inc r15
+              beq ReadSector_exit_fail_a
+              ldx #$00
+rdbyte1:      inx
+              beq ReadSector_exit_fail_a
+b:            lda IWM_Q6_OFF
               bpl rdbyte1
 check_d5:     eor #$d5
-              bne rdbyte1
+              bne rdbyte1_start
               nop
-              nop
-              nop
-rdbyte2:      lda IWM_Q6_OFF,x
+rdbyte2_start: ldx #$00
+rdbyte2:      inx
+              beq ReadSector_exit_fail_a
+c:            lda IWM_Q6_OFF
               bpl rdbyte2
               cmp #$aa
               bne check_d5
               nop
-              nop
-              nop
-              nop
-rdbyte3:      lda IWM_Q6_OFF,x
+              ldx #$00
+rdbyte3:      inx
+              beq ReadSector_exit_fail_a
+d:            lda IWM_Q6_OFF
               bpl rdbyte3
               cmp #$96
               beq FoundAddress
@@ -272,43 +282,53 @@ rdbyte3:      lda IWM_Q6_OFF,x
               eor #$ad
               beq FoundData
               bne ReadSector
-
+ReadSector_exit_fail_a:
+    plp
+ReadSector_exit_fail:
+    lda #$01
+    sta r15
+    rts
 FoundAddress:
     ldy #$03
 hdr_loop:
     sta found_track
     nop
-    nop
-    nop
+    ldx #$00
 adr_hdr_rdbyte1:
-    lda IWM_Q6_OFF,x
+    inx
+    beq ReadSector_exit_fail_a
+e:  lda IWM_Q6_OFF
     bpl adr_hdr_rdbyte1
     rol A
     sta bits
     nop
     nop
-    nop
-    nop
+    ldx #$00
  adr_hdr_rdbyte2:
-    lda IWM_Q6_OFF,x
+    inx
+    beq ReadSector_exit_fail_a
+j:  lda IWM_Q6_OFF
     bpl adr_hdr_rdbyte2
     and bits
     dey
     bne hdr_loop
     plp
     cmp sector
-    bne ReadSector
+    bne ReadSector ;TODO: only retry this ~32 times -- after that, we know we've failed to find the sector
     lda found_track
     cmp track
-    bne ReadSector
+    bne ReadSector_exit_fail_a
     bcs ReadSector_C
 
 FoundData:
     ldy #86
 read_twos_loop:
     sty bits
+    ldx #$00
 dat_twos_rdbyte1:
-    ldy IWM_Q6_OFF,x ;ldy IWM_Q6_OFF,x
+    inx
+    beq ReadSector_exit_fail
+g:  ldy IWM_Q6_OFF 
     bpl dat_twos_rdbyte1
     eor conv_tab-128,y
     ldy bits
@@ -316,13 +336,16 @@ dat_twos_rdbyte1:
     sta TWOS_BUFFER,y
     nop
     nop
-    nop ;Possibly here is good
+    nop 
     bne read_twos_loop
 
 read_sixes_loop:
     sty bits
+    ldx #$00
 sixes_rdbyte2:
-    ldy IWM_Q6_OFF,x
+    inx
+    beq ReadSector_exit_fail
+h:  ldy IWM_Q6_OFF
     bpl sixes_rdbyte2
     eor conv_tab-128,y
     ldy bits
@@ -330,17 +353,20 @@ sixes_rdbyte2:
     iny
     nop
     nop
-    nop
-    nop
     bne read_sixes_loop
 
+    ldx #$00
 checksum_rdbyte3:
-    ldy IWM_Q6_OFF,x
+    inx 
+    beq ReadSector_exit_fail
+i:  ldy IWM_Q6_OFF
     bpl checksum_rdbyte3
     eor conv_tab-128,y
 another:
     beq Decode
-    jmp ReadSector
+    lda #$ea
+    sta r14
+    jmp ReadSector_exit_fail
 
 ; 
 ; Decode the 6+2 encoding.  The high 6 bits of each byte are in place, now we
@@ -362,13 +388,9 @@ decode_loop:
     iny
     bne     decode_loop
 
+    lda #$00
+    sta r15
     rts
-
-DiskTestDone:
-
-    JMP init
-HALT:
-    JMP HALT
 
 .global MON_WAIT
 MON_WAIT:
@@ -412,10 +434,10 @@ step_track:
 load_next_sector:
 .GLOBAL load_next_sector
     lda     cur_sector
-    sta     sector            
-    lda     cur_track
-    sta     track
-    jsr     ReadSector
+    ldx     cur_track
+    jsr     floppy_read
+    lda r15
+    bne next_sector_done
     inc     cur_sector
     lda     cur_sector
     cmp     #$10
@@ -433,10 +455,23 @@ load_boot_sector:
     lda     #>BOOT1           ;Target is the NES RAM boot area
     sta     data_ptr+1
     jsr     load_next_sector
+    lda r15
+    beq load_boot_sector_exit
+    jsr floppy_off
+    lda #<READ_ERROR_MSG
+    sta string_ptr
+    lda #>READ_ERROR_MSG
+    sta string_ptr+1
+    jsr PRINTSTR
+    jmp init
+load_boot_sector_exit:
     rts
     
 BOOT_MSG:
     .ASCIIZ "LOADING..."
+
+READ_ERROR_MSG:
+    .ASCIIZ "READ ERROR"
 
 IRQ_BRK_HANDLE:
     RTI
@@ -493,8 +528,6 @@ rts
 jsr floppy_off      ;FFE8
 rts
 jsr floppy_on       ;FFEC
-rts
-jsr floppy_motor_wait ;FFF0
 rts
 
 .segment "VECTORS"

@@ -5,11 +5,11 @@ IWM_PH0_OFF     = $c080             ;stepper motor control
 IWM_PH0_ON      = $c081             ;stepper motor control
 IWM_PH2_OFF     = $c084
 IWM_PH2_ON      = $c085
-IWM_MOTOR_ON    = $c089             ;starts drive spinning
-IWM_MOTOR_OFF   = $c088
-IWM_SEL_DRIVE_1 = $c08a             ;selects drive 1
-IWM_Q6_OFF      = $c08c             ;read
-IWM_Q7_OFF      = $c08e             ;WP sense/read
+IWM_MOTOR_ON    = $c0e9             ;starts drive spinning
+IWM_MOTOR_OFF   = $c0e8
+IWM_SEL_DRIVE_1 = $c0ea             ;selects drive 1
+IWM_Q6_OFF      = $c0ec             ;read
+IWM_Q7_OFF      = $c0ee             ;WP sense/read
 
 CART_SWITCHES   = $d000
 
