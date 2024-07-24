@@ -7,9 +7,41 @@
 .include "echo_command.inc"
 .include "run_command.inc"
 
+basic_cold_start = $e000
+apple_ii_cout = $fded 
+apple_ii_cr = $fd8e
+
 .global command_processor_entry
 command_processor_entry:
+    ;Check for valid hardware
+    lda $fff0
+    cmp #'N'
+    bne apple_ii_message
+    lda $fff1
+    cmp #'E'
+    bne apple_ii_message
+    lda $fff2
+    cmp #'S'
+    beq command_processor_start
 
+apple_ii_message:
+    ;Move cursor down one line
+    jsr apple_ii_cr
+    ldy #$00
+apple_ii_message_loop:
+    lda apple_ii_message_string,y
+    beq apple_ii_enter_cold_start
+    jsr apple_ii_cout
+    iny
+    clc
+    bcc apple_ii_message_loop
+apple_ii_enter_cold_start:
+    jmp basic_cold_start
+
+apple_ii_message_string:
+    .byte 'T'+$80, 'H'+$80, 'I'+$80, 'S'+$80, ' '+$80, 'I'+$80, 'S'+$80, ' '+$80, 'A'+$80,  'N'+$80,  ' '+$80,  'N'+$80,  'E'+$80,  'S'+$80,  ' '+$80,  'A'+$80,  'P'+$80,  'P'+$80, $00
+
+command_processor_start:
     jsr console_init
     print startup_message
 

@@ -1,11 +1,21 @@
 DONKEY_OBJECTS = entry.o launcher.o
 DONKEY_INCLUDES = launcher.inc ../nos/nos_calls.inc
-DONKEY_ALL_TARGETS = DONKEY DPD0 DPD1 DCD donkey.map
+DONKEY_BIN_TARGETS = DONKEY DPD0 DPD1 DCD
+DONKEY_ALL_TARGETS = $(DONKEY_BIN_TARGETS) donkey.map
 UTILS = ../build_util
 SOURCE_INES = ~/donkey.nes
+CIDERPRESS2 = ~/Downloads/cp2_1.0.2_osx-x64_fd
 
 .PHONY: all
 all: $(DONKEY_ALL_TARGETS)
+
+.PHONY: ../nos/nos.do
+../nos/nos.do:
+	make -C ../nos/
+
+install: $(DONKEY_BIN_TARGETS) ../nos/nos.do
+	$(CIDERPRESS2)/cp2 add ../nos/nos.do $(DONKEY_BIN_TARGETS)
+	for t in $(DONKEY_BIN_TARGETS); do $(CIDERPRESS2)/cp2 sa ../nos/nos.do $$t type=bin; done
 
 .PHONY: clean
 clean:
