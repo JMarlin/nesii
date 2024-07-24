@@ -7,6 +7,6 @@ system_startup:
 
     ;Read boot sector into NES RAM (ultimately, that's where the rest of this code should go too)
     jsr load_boot_sector
-    jmp BOOT1
+    jmp BOOT1+1
 
     rts
