@@ -529,6 +529,7 @@ jsr floppy_off      ;FFE8
 rts
 jsr floppy_on       ;FFEC
 rts
+.byte "NES" ;FFF0
 
 .segment "VECTORS"
 .word $0000
