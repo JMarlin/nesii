@@ -149,7 +149,7 @@ command_table:
     .word $0000
 
 startup_message:
-    .byte $0a, $0d, " NOS 0.0.2", $00
+    .byte $0a, $0d, " NOS 0.0.3", $00
 
 prompt:
     .byte $0a, $0d
