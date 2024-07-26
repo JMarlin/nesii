@@ -19,14 +19,17 @@ launcher_entry:
     cmp #'S'
     bne apple_ii_message
 
+    ;Make sure we're in lo-SRAM mapping mode
+    lda #$02
+    sta $d000
     ;Load the first prg block to $8000
     lda #<prg0_str
     sta r0
     lda #>prg0_str
     sta r1
     jsr binary_loader_load
-    ;Switch low cart RAM mapping
-    lda #$02
+    ;Switch to hi-SRAM mapping
+    lda #$00
     sta $d000
     ;Load the second prg block to $8000
     lda #<prg1_str
