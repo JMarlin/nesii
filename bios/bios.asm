@@ -184,7 +184,7 @@ TILE_PTR=$FE
     STY $2001
     STY $2006
     STY $2006
-    LDX #16
+    LDX #4
 
 TILE_LOAD_LOOP:
     LDA (TILE_PTR),Y
