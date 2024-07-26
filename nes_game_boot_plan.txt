@@ -12,23 +12,16 @@ C000-CFFF: SLOT
 D000-DFFF: SWITCHES
 E000-FFFF: SRAM E000-FFFF
 
-MODE 1:
+MODE 1/3:
 --------------------------
 8000-BFFF: SRAM 8000-BFFF
 C000-CFFF: SRAM C000-CFFF
 D000-DFFF: SRAM D000-DFFF
 E000-FFFF: SRAM E000-FFFF
 
-MODE 3:
---------------------------
-8000-BFFF: SRAM 8000-BFFF
-C000-CFFF: SRAM C000-CFFF
-D000-DFFF: SWITCHES
-E000-FFFF: ROM
-
 Game boot procedure:
   1. Read 8k chr data from floppy and store to CHRAM
-  2. Switch to MODE 1
+  2. Switch to MODE 2
   3. Read 16k prg data from floppy and store to 8000-BFFF
   4. Switch to MODE 0
   5. Read 16k prg data from floppy and store to 8000-BFFF
