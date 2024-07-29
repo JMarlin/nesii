@@ -5,7 +5,6 @@ SYSTEM_TARGETS = system.bin
 .PHONY: all
 all: $(SYSTEM_TARGETS)
 
-.PHONY: clean
 clean:
 	rm -f $(SYSTEM_OBJECTS)
 	rm -f $(SYSTEM_TARGETS)
