@@ -1,3 +1,4 @@
+.segment "CODE"
 .include "rom_floppy_constants.inc"
 
 ;IMPORTANT NOTE: When making the disk image for this, you'll have to skew the sector data

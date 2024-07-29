@@ -29,9 +29,9 @@ PIN    11 = ROMSELB;
 
 /*
  Switch Modes:
- 00 - RAM A | Peripherals | Vert mirror
- 01 - RAM B | Peripherals | Vert mirror
- 10 - RAM A | RAM B | Vert mirror
+ 00 - RAM B | Peripherals | ROM | Vert mirror
+ 10 - RAM A | Peripherals | RAM B | Vert mirror
+ 01 - RAM A | RAM B | Vert mirror
  11 - RAM A | RAM B | Horiz mirror
 */
 
@@ -65,20 +65,28 @@ SWITCH_CLK =
     (!SW_B) & (!CPU_RWB) & (!ROMSELB) & (!M2) & CA14 & (!CA13) & CA12; 
 
 /* A14 on the program RAM is 
-   - 1 when the switches are 0b01
+   - 1 when the switches are 0b00
    - CA14 in all other cases */
 PRG_RAM_A14 = 
-   ( ((!SW_B) & (SW_A))       )
- # (!((!SW_B) & (SW_A)) & CA14);
+   ( ((!SW_B) & (!SW_A))       )
+ # (!((!SW_B) & (!SW_A)) & CA14);
 
 CPU_WRB = !CPU_RWB;
 
-/* RAM is selected if we're in the low half of the cart or Switch B is enabled */
-PRG_RAM_CEB = 
-    ROMSELB    # (!SW_B & CA14); 
+/* RAM is selected if:
+    - We're in the low half of the cart
+    - Switch B is on
+    - We're in mode 2 and accessing the ROM area */
+PRG_RAM_CEB = !(
+    (!ROMSELB) & (
+        (!CA14)
+      # (SW_B)
+      # ((!SW_B) & SW_A & CA14 & CA13)
+    )
+);
 
-/* ROM is selected at 0xEXXX - 0xFXXX if switch B is off */
-BIOS_ROM_CEB = ROMSELB # !CA14 # !CA13 # SW_B;
+/* ROM is selected at 0xEXXX - 0xFXXX if we are in mode 0 */
+BIOS_ROM_CEB = ROMSELB # !CA14 # !CA13 # SW_B # SW_A;
 
 
 
