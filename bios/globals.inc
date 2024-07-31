@@ -1,8 +1,6 @@
 .ifndef globals_inc
     globals_inc = 1
 
-    general_pointer  = $c0
-    string_ptr       = $03
     text_buffer      = $0300
     sector_buffer    = $0400
     text_index       = $50

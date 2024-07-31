@@ -3,6 +3,7 @@
 .include "monitor.inc"
 .include "startup_interface.inc"
 .include "floppy.inc"
+.include "bios.inc"
 .include "globals.inc"
 
 entry:
@@ -33,30 +34,30 @@ ppu_vblank_wait3:
 
 ;Run the BIOS out of RAM to allow for BIOS updates
 ;Copy ourself from E000-FFFF to A000-BFFF
-lda #$00
-sta r0
-sta r2
-lda #$e0
-sta r3
-lda #$a0
-sta r1
-ldy #$00
+    lda #$00
+    sta r0
+    sta r2
+    lda #$e0
+    sta r3
+    lda #$a0
+    sta r1
+    ldy #$00
 copy_next_bios_byte:
-lda (r2),y
-sta (r0),y
-inc r2
-inc r0
-bne copy_next_bios_byte
-inc r3
-inc r1
-lda r1
-cmp #$c0
-bne copy_next_bios_byte
+    lda (r2),y
+    sta (r0),y
+    inc r2
+    inc r0
+    bne copy_next_bios_byte
+    inc r3
+    inc r1
+    lda r1
+    cmp #$c0
+    bne copy_next_bios_byte
 ;Switch to all-RAM mapping
 ;No need for jumping to any kind of stub code, we should read the exact same thing out of RAM
 ;after the mapping switch that we would have run out of ROM if the copy happened correctly
-lda #$02
-sta $d000
+    lda #$02
+    sta $d000
 
 rawf=139
 ;Initialize the APU so we can make a debug beep
@@ -162,15 +163,15 @@ write_attr_top:
     lda #$00
     sta $4000
 ;Print startup banner
-    lda #<boot_msg
+    lda #<boot_message
     sta $03
-    lda #>boot_msg
+    lda #>boot_message
     sta $04
     jsr char_io_printstr
 ;Init floppy and try to boot
     jsr floppy_init
     jsr system_startup
-    jmp init
+    jmp monitor_start
 
 .global mon_wait
 mon_wait:
@@ -239,21 +240,21 @@ load_boot_sector:
     beq load_boot_sector_exit
     jsr floppy_off
     lda #<read_error_message
-    sta string_ptr
+    sta string_pointer
     lda #>read_error_message
-    sta string_ptr+1
+    sta string_pointer+1
     jsr char_io_printstr
-    jmp init
+    jmp monitor_start
 load_boot_sector_exit:
     rts
     
-BOOT_MSG:
+boot_message:
     .asciiz "LOADING..."
 
 read_error_message:
     .asciiz "READ ERROR"
 
-IRQ_BRK_HANDLE:
+irq_brk_handle:
     rti
    
 apu_regs:
@@ -272,7 +273,7 @@ jsr char_io_init_keyboard     ;FFC8
 rts
 jsr load_next_sector          ;FFCC
 rts
-jmp init                      ;FFD0
+jmp monitor_start             ;FFD0
 rts
 jsr read_sector               ;FFD4
 rts

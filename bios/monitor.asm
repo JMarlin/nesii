@@ -1,11 +1,12 @@
-.SEGMENT "CODE"
-.INCLUDE "monitor.inc"
-.INCLUDE "char_io.inc"
+.segment "CODE"
+.include "monitor.inc"
+.include "char_io.inc"
 
 ; C'mon, the Compact MONitor
 ; written by Bruce Clark and placed in the public domain
 ;
 ; minor tweaks and porting by Ed Spittles
+; port to NESII by Joe Marlin
 ;
 ; To the extent possible under law, the owners have waived all
 ; copyright and related or neighboring rights to this work. 
@@ -17,438 +18,216 @@
 ; /opt/cc65/bin/ca65 --listing -DSINGLESTEP cmon.a65 
 ; /opt/cc65/bin/ld65 -t none -o cmon.bin cmon.o
 ;
-; define SINGLESTEP to include the single-stepping plugin
-;     (modified to display registers in AXYS order)
-;
 ; ported to 6502 from 65Org16
 ; ported to a6502 emulator
 
-.feature labels_without_colons
-
-WIDTH  = 4         ;must be a power of 2
-HEIGHT = 20
+width  = 4         ;must be a power of 2
+height = 20
 
 .macro putc
-       TAX
-       TYA
-       PHA
-       PHP
-       TXA
-       PHA
-       JSR PRNTCHR
-       PLA
-       TAX
-       PLP 
-       PLA
-       TAY
-       TXA
+       tax
+       tya
+       pha
+       php
+       txa
+       pha
+       jsr char_io_printchr
+       pla
+       tax
+       plp 
+       pla
+       tay
+       txa
 .endmacro
 
 .macro getc
-       TYA
-       PHA
-       PHP
-       JSR GETKEY
-       TAX
+       tya
+       pha
+       php
+       jsr char_io_getkey
+       tax
        PLP
-       PLA
-       TAY
-       TXA
+       pla
+       tay
+       txa
 .endmacro
 
-.ifdef SINGLESTEP
-AREG   = 4
-PREG   = 5
-SREG   = 6
-XREG   = 7
-YREG   = 8
-STBUF  = 9 ;uses 9 bytes
-.endif
+dump_byte:
+       ldy #$00
+       lda (address),Y
+       jsr print_hex
+       inc address
+       bne mon_2
+       inc address+1
+       jmp mon_2
 
-DUMP_BYTE:
-       LDY #$00
-       LDA (ADRESS),Y
-       JSR OUTHEX
-       INC ADRESS
-       BNE M2
-       INC ADRESS+1
-       JMP M2
-
-.GLOBAL load_next_sector
-.word load_next_sector
-
-init:
-.GLOBAL init
-
-;Indicate that we haven't yet clocked in any bits from the keyboard
-    JSR INITKEYBOARD
-    LDA #$FF
-    STA LAST_KB_BIT
-    LDA #$00
-    STA CURRENT_KB_COL
-    STA CURRENT_KB_ROW
-
-.ifdef SINGLESTEP
-       TSX
-       STX SREG
-       PHP
-       PLA
-       STA PREG
-.endif
-
-MON    CLD
-M1     JSR OUTCR
-       LDA #$2D       ;output dash prompt
+.global monitor_start
+monitor_start:
+       jsr char_io_init_keyboard
+mon:
+       cld
+mon_1:
+       jsr print_cr
+       lda #$2d       ;output dash prompt
        putc
-M2     LDA #0
-       STA NUMBER+1
-       STA NUMBER
-M3     AND #$0F
-M4     LDY #4         ;accumulate digit
-M5     ASL NUMBER
-       ROL NUMBER+1
-       DEY
-       BNE M5
-       ORA NUMBER
-       STA NUMBER
-M6     getc
-       CMP #$0D
-       BEQ M1         ;branch if cr
+mon_2:
+       lda #0
+       sta number+1
+       sta number
+mon_3:
+       and #$0f
+mon_4:
+       ldy #4         ;accumulate digit
+mon_5:
+       asl number
+       rol number+1
+       dey
+       bne mon_5
+       ora number
+       sta number
+mon_6:
+       getc
+       cmp #$0d
+       beq mon_1         ;branch if cr
 ;
-; Insert additional commands for characters (e.g. control characters)
+; Insert additional store_commandnds for characters (e.g. control characters)
 ; outside the range $20 (space) to $7E (tilde) here
 ;
-
-       CMP #$20       ;don't output if outside $20-$7E
-       BCC M6
-       CMP #$7F
-       BCS M6
+       cmp #$20       ;don't output if outside $20-$7E
+       bcc mon_6
+       cmp #$7f
+       bcs mon_6
        putc
-       CMP #$2C
-       BEQ COMMA
-       CMP #'+'
-       BEQ AT
-       CMP #'/'
-       BEQ DUMP_BYTE
+       cmp #$2c
+       beq store_command
+       cmp #'+'
+       beq set_address_command
+       cmp #'/'
+       beq dump_byte
 ;
-; Insert additional commands for non-letter characters (or case-sensitive
+; Insert additional store_commandnds for non-letter characters (or case-sensitive
 ; letters) here
 ;
-.ifdef SINGLESTEP
-       CMP #$24		; $ is single step
-       BNE NSSTEP
-       JMP SSTEP
-NSSTEP
-.endif
-
 ; now dealing with letters
-       EOR #$30
-       CMP #$0A
-       BCC M4         ;branch if digit
-       ORA #$20       ;convert to upper case
-       SBC #$77
+       eor #$30
+       cmp #$0A
+       bcc mon_4         ;branch if digit
+       ora #$20       ;convert to upper case
+       sbc #$77
 ;
 ; mapping:
 ;   A-F -> $FFFA-$FFFF
 ;   G-O -> $0000-$0008
 ;   P-Z -> $FFE9-$FFF3
 ;
-       BEQ GO
-       CMP #$FA ; #$FA or #$FFFA
-       BCS M3
+       beq user_jump_command
+       cmp #$FA ; #$FA or #$FFFA
+       bcs mon_3
 ;
-; Insert additional commands for (case-insensitive) letters here
+; Insert additional store_commandnds for (case-insensitive) letters here
 ;
-
-       CMP #$F1 ; #$F1 or  #$FFF1
-       BNE M6
-DUMP   JSR OUTCR
-       TYA
-       PHA
-       CLC            ;output address
-       ADC NUMBER
-       PHA
-       LDA #0
-       ADC NUMBER+1
-       JSR OUTHEX
-       PLA
-       JSR OUTHSP
-D1     LDA (NUMBER),Y ;output hex bytes
-       JSR OUTHSP
-       INY
-       TYA
-       AND #WIDTH-1
-       BNE D1
-       PLA
-       TAY
-D2     LDA (NUMBER),Y ;output characters
-       AND #$7F
-       CMP #$20
-       BCC D3
-       CMP #$7F
-       BCC D4
-D3     EOR #$40
-D4     putc
-       INY
-       TYA
-       AND #WIDTH-1
-       BNE D2
-       CPY #WIDTH*HEIGHT
-       BCC DUMP
-M2J
-       JMP M2		; branches out of range for 6502 when putc is 3 bytes
-COMMA  LDA NUMBER
-       STA (ADRESS),Y
-       INC ADRESS
-       BNE M2J
-       INC ADRESS+1
-       BCS M2J
-AT     LDA NUMBER
-       STA ADRESS
-       LDA NUMBER+1
-       STA ADRESS+1
-       BCS M2J
-GO     JSR G1
-       JMP M2		; returning after a 'go'
-G1     JMP (NUMBER)
-OUTHEX ;JSR OH1		; for 16-bit bytes
-OH1    JSR OH2
-OH2    ASL
-       ADC #0
-       ASL
-       ADC #0
-       ASL
-       ADC #0
-       ASL
-       ADC #0
-       PHA
-       AND #$0F
-       CMP #$0A
-       BCC OH3
-       ADC #$66
-OH3    EOR #$30
+       cmp #$f1 ; #$F1 or  #$FFF1
+       bne mon_6
+dump_memory_command:
+       jsr print_cr
+       tya
+       pha
+       clc            ;output address
+       adc number
+       pha
+       lda #0
+       adc number+1
+       jsr print_hex
+       pla
+       jsr print_hex_and_space
+dump_memory_command_1:
+       lda (number),Y ;output hex bytes
+       jsr print_hex_and_space
+       iny
+       tya
+       and #width-1
+       bne dump_memory_command_1
+       pla
+       tay
+dump_memory_command_2:
+       lda (number),Y ;output characters
+       and #$7f
+       cmp #$20
+       bcc dump_memory_command_3
+       cmp #$7f
+       bcc dump_memory_command_4
+dump_memory_command_3:
+       eor #$40
+dump_memory_command_4:
        putc
-       PLA
-       RTS
-OUTHSP JSR OUTHEX
-       LDA #$20
-OA1    putc
-       RTS
-OUTCR  LDA #$0D
+       iny
+       tya
+       and #width-1
+       bne dump_memory_command_2
+       cpy #width*height
+       bcc dump_memory_command
+mon_2_jump:
+       jmp mon_2		; branches out of range for 6502 when putc is 3 bytes
+store_command:
+       lda number
+       sta (address),Y
+       inc address
+       bne mon_2_jump
+       inc address+1
+       bcs mon_2_jump
+set_address_command:
+       lda number
+       sta address
+       lda number+1
+       sta address+1
+       bcs mon_2_jump
+user_jump_command:
+       jsr user_jump_command_1
+       jmp mon_2		; returning after a 'go'
+user_jump_command_1:
+       jmp (number)
+print_hex:
+       ;jsr print_hex_1		; for 16-bit bytes
+print_hex_1:
+       jsr print_hex_2
+print_hex_2:
+       asl
+       adc #0
+       asl
+       adc #0
+       asl
+       adc #0
+       asl
+       adc #0
+       pha
+       and #$0f
+       cmp #$0a
+       bcc print_hex_3
+       adc #$66
+print_hex_3:
+       eor #$30
        putc
-       LDA #$0A
-       BNE OA1        ;always
-
-
-.ifdef SINGLESTEP
-SSTEP  LDX #7
-STEP1  LDA STEP4,X
-       STA STBUF+1,X
-       DEX
-       BPL STEP1
-       LDX SREG
-       TXS
-       LDA (ADRESS),Y
-       BEQ STBRK
-       JSR GETLEN
-       TYA
-       PHA
-STEP2  LDA (ADRESS),Y
-       STA STBUF,Y
-       DEY
-       BPL STEP2
-       EOR #$20
-       CMP #1
-       PLA
-       JSR STADR
-       LDA STBUF
-       CMP #$20
-       BEQ STJSR
-       CMP #$4C
-       BEQ STJMP
-       CMP #$40
-       BEQ STRTI
-       CMP #$60
-       BEQ STRTS
-       CMP #$6C
-       BEQ STJMPI
-       AND #$1F
-       CMP #$10
-       BNE STEP3
-       LDA #4
-       STA STBUF+1
-STEP3  LDA PREG
-       PHA
-       LDA AREG
-       LDX XREG
-       LDY YREG
-       PLP
-       JMP STBUF
-STEP4  NOP
-       NOP
-       JMP STNB
-       JMP STBR
-STJSR  LDA ADRESS+1
-       PHA
-       LDA ADRESS
-       PHA        ;fall thru
-STJMP  LDY STBUF+1
-       LDA STBUF+2
-STJMP1 STY ADRESS
-STJMP2 STA ADRESS+1
-       JMP STNB1
-STJMPI INY
-       LDA (STBUF+1),Y
-       STA ADRESS
-       INY
-       LDA (STBUF+1),Y
-       JMP STJMP2
-STRTI  PLA
-       STA PREG
-       PLA
-       STA ADRESS
-       PLA
-       JMP STJMP2
-STRTS  PLA
-       STA ADRESS
-       PLA
-       STA ADRESS+1
-       LDA #0
-       JSR STADR
-       JMP STNB1
-STBRK  LDA ADRESS+1
-       PHA
-       LDA ADRESS
-       PHA
-       LDA PREG
-       PHA
-       ORA #$04 ; set i flag
-       AND #$F7 ; clear d flag
-       STA PREG
-       LDY a:-2 ; $FFFFFFFE
-       LDA a:-1 ; $FFFFFFFF
-       JMP STJMP1
-STNB   PHP
-       STA AREG
-       STX XREG
-       STY YREG
-       PLA
-       STA PREG
-       CLD
-STNB1  TSX
-       STX SREG
-STNB2  JSR STOUT
-       JMP M2
-STBR   DEC ADRESS+1
-       LDY #-1  ; #$FFFF
-       LDA (ADRESS),Y
-       BMI STBR1
-       INC ADRESS+1
-STBR1  CLC
-       JSR STADR
-       JMP STNB2
-STADR  ADC ADRESS
-       STA ADRESS
-       BCC STADR1
-       INC ADRESS+1
-STADR1 RTS
-OUTPC  LDA ADRESS+1
-       JSR OUTHEX
-       LDA ADRESS
-       JMP OUTHSP
-STOUT  JSR OUTCR
-       JSR OUTPC ; fall thru
-OUTREG LDA AREG
-       JSR OUTHSP
-       LDA XREG
-       JSR OUTHSP
-       LDA YREG
-       JSR OUTHSP
-       LDA SREG
-       JSR OUTHSP
-       LDA PREG
-       JSR OUTHSP
-       LDA PREG   ;fall thru
-OUTBIN SEC
-       ROL
-OUTB1  PHA
-       LDA #$18
-       ROL
+       pla
+       rts
+print_hex_and_space:
+       jsr print_hex
+       lda #$20
+print_lf:
        putc
-       PLA
-       ASL
-       BNE OUTB1
-       RTS
-;
-;    0123456789ABCDEF
-;
-; 00 22...22.121..33.
-; 10 22...22.13...33.
-; 20 32..222.121.333.
-; 30 22...22.13...33.
-; 40 12...22.121.333.
-; 50 22...22.13...33.
-; 60 12...22.121.333.
-; 70 22...22.13...33.
-; 80 .2..222.1.1.333.
-; 90 22..222.131..3..
-; A0 222.222.121.333.
-; B0 22..222.131.333.
-; C0 22..222.121.333.
-; D0 22...22.13...33.
-; E0 22..222.121.333.
-; F0 22...22.13...33.
-;
-; Return instruction length - 1 (note that BRK is considered to be a 2 byte
-; instruction and returns 1)
-;
-GETLEN LDY #1
-       CMP #$20  ; if opcode = $20, then length = 3
-       BEQ GETL3
-       AND #$DF
-       CMP #$40
-       BEQ GETL1 ; if (opcode & $DF) = $40, then length = 1
-       AND #$1F
-       CMP #$19
-       BEQ GETL3 ; if (opcode & $1F) = $19, then length = 3
-       AND #$0D
-       CMP #$08
-       BNE GETL2 ; if (opcode & $0D) = $08, then length = 1
-GETL1  DEY
-GETL2  CMP #$0C
-       BCC GETL4 ; if (opcode & $0D) >= $0C, then length = 3
-GETL3  INY
-GETL4  RTS
+       rts
+print_cr:
+       lda #$0d
+       putc
+       lda #$0a
+       bne print_lf        ;always
 
-BREAK  STA AREG
-       STX XREG
-       STY YREG
-       PLA
-       STA PREG
-       PLA
-       STA ADRESS
-       PLA
-       STA ADRESS+1
-       TSX
-       STX SREG
-       CLD
-       JSR STOUT
-       JMP M1
-.endif
-
-Lnmi:
+label_nmi:
         .byte 1,2
  
-Lreset:
-        .word init
+label_reset:
+        .word monitor_start
 
-Lirqbrk:
-.ifdef SINGLESTEP
-        .word BREAK
-.else
+label_irq_brk:
         .byte 5,6
-.endif
-
-Lend:
-
-
+        
+label_end:

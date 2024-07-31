@@ -60,6 +60,11 @@ keyboard_row_skip_loop:
     and #$01
     bne keyboard_init_column_loop
 keyboard_column_one_found:
+    lda #$ff
+    sta last_keyboard_bit
+    lda #$00
+    sta current_keyboard_column
+    sta current_keyboard_row
     rts
 
 

@@ -2,13 +2,13 @@
     char_io_inc = 1
 
     screen_addr             = $00
-    string_ptr              = $03
+    string_pointer          = $03
     is_scrolling            = $05
     scroll_value            = $06
     current_keyboard_column = $07
     current_keyboard_row    = $08
     key_was_found           = $09
-    last_keyboard_hit       = $0a
+    last_keyboard_bit       = $0a
     last_pressed_key        = $0b
 
     .global char_io_init_keyboard

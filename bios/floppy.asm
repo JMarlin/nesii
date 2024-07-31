@@ -1,8 +1,7 @@
 .segment "CODE"
-.include "rom_floppy_constants.inc"
+.include "floppy.inc"
+.include "bios.inc"
 .include "globals.inc"
-.global MON_WAIT
-.global ReadSector
 
 
 .global floppy_init
@@ -17,38 +16,38 @@ floppy_init:
     lda #$60
     sta slot_index        ;keep this around
     tax
-    lda IWM_Q7_OFF        ;set to read mode
-    lda IWM_Q6_OFF
-    lda IWM_SEL_DRIVE_1   ;select drive 1
-    lda IWM_MOTOR_ON      ;spin it up
+    lda iwm_q7_off        ;set to read mode
+    lda iwm_q6_off
+    lda iwm_select_drive_1   ;select drive 1
+    lda iwm_motor_on      ;spin it up
 ; Blind-seek to track 0.
     ldy #80               ;80 phases (40 tracks)
 seek_loop:
-    lda IWM_PH0_OFF,x     ;turn phase N off
+    lda iwm_ph0_off,x     ;turn phase N off
     tya
     and #$03              ;mod the phase number to get 0-3
     asl                   ;double it to 0/2/4/6
     ora slot_index        ;add in the slot index
     tax
-    lda IWM_PH0_ON,x      ;turn on phase 0, 1, 2, or 3
+    lda iwm_ph0_on,x      ;turn on phase 0, 1, 2, or 3
     lda #86
-    jsr MON_WAIT          ;wait 19664 cycles
+    jsr mon_wait          ;wait 19664 cycles
     dey                   ;next phase
     bpl seek_loop
-    lda IWM_PH0_OFF 
-    lda IWM_MOTOR_OFF
+    lda iwm_ph0_off 
+    lda iwm_motor_off
     rts
 
 
 .global floppy_on
 floppy_on:
-    lda IWM_MOTOR_ON
+    lda iwm_motor_on
     rts
 
 
 .global floppy_off
 floppy_off:
-    lda IWM_MOTOR_OFF
+    lda iwm_motor_off
     rts
 
 
@@ -115,17 +114,17 @@ step_forward:
     asl     A
     ora     #$62
     tax
-    lda     IWM_PH0_ON,x      
-    jsr     MON_WAIT      
-    lda     IWM_PH0_OFF,x     
+    lda     iwm_ph0_on,x      
+    jsr     mon_wait      
+    lda     iwm_ph0_off,x     
     inx
     inx
     txa
     and     #$F7
     tax
-    lda     IWM_PH0_ON,x
-    jsr     MON_WAIT
-    lda     IWM_PH0_OFF,x
+    lda     iwm_ph0_on,x
+    jsr     mon_wait
+    lda     iwm_ph0_off,x
     inc     cur_track
 step_forward_done:
     rts
@@ -139,17 +138,17 @@ step_back:
     asl     
     ora     #$60
     tax
-    lda     IWM_PH0_ON,x      
-    jsr     MON_WAIT      
-    lda     IWM_PH0_OFF,x     
+    lda     iwm_ph0_on,x      
+    jsr     mon_wait      
+    lda     iwm_ph0_off,x     
     dex
     dex
     txa
     and     #$f7
     tax
-    lda     IWM_PH0_ON,x
-    jsr     MON_WAIT
-    lda     IWM_PH0_OFF,x
+    lda     iwm_ph0_on,x
+    jsr     mon_wait
+    lda     iwm_ph0_off,x
     dec     cur_track
 step_back_done:
     rts
@@ -169,7 +168,7 @@ rdbyte1_start:
 rdbyte1:
     inx
     beq read_sector_exit_fail_a
-    lda IWM_Q6_OFF
+    lda iwm_q6_off
     bpl rdbyte1
 check_d5:
     eor #$d5
@@ -180,7 +179,7 @@ rdbyte2_start:
 rdbyte2:
     inx
     beq read_sector_exit_fail_a
-    lda IWM_Q6_OFF
+    lda iwm_q6_off
     bpl rdbyte2
     cmp #$aa
     bne check_d5
@@ -189,7 +188,7 @@ rdbyte2:
 rdbyte3:
     inx
     beq read_sector_exit_fail_a
-    lda IWM_Q6_OFF
+    lda iwm_q6_off
     bpl rdbyte3
     cmp #$96
     beq found_address
@@ -213,7 +212,7 @@ hdr_loop:
 adr_hdr_rdbyte1:
     inx
     beq read_sector_exit_fail_a
-    lda IWM_Q6_OFF
+    lda iwm_q6_off
     bpl adr_hdr_rdbyte1
     rol A
     sta bits
@@ -223,7 +222,7 @@ adr_hdr_rdbyte1:
  adr_hdr_rdbyte2:
     inx
     beq read_sector_exit_fail_a
-    lda IWM_Q6_OFF
+    lda iwm_q6_off
     bpl adr_hdr_rdbyte2
     and bits
     dey
@@ -243,12 +242,12 @@ read_twos_loop:
 dat_twos_rdbyte1:
     inx
     beq read_sector_exit_fail
-    ldy IWM_Q6_OFF 
+    ldy iwm_q6_off 
     bpl dat_twos_rdbyte1
     eor conv_tab-128,y
     ldy bits
     dey
-    sta TWOS_BUFFER,y
+    sta twos_buffer,y
     nop
     nop
     nop 
@@ -259,7 +258,7 @@ read_sixes_loop:
 sixes_rdbyte2:
     inx
     beq read_sector_exit_fail
-    ldy IWM_Q6_OFF
+    ldy iwm_q6_off
     bpl sixes_rdbyte2
     eor conv_tab-128,y
     ldy bits
@@ -272,7 +271,7 @@ sixes_rdbyte2:
 checksum_rdbyte3:
     inx 
     beq read_sector_exit_fail
-    ldy IWM_Q6_OFF
+    ldy iwm_q6_off
     bpl checksum_rdbyte3
     eor conv_tab-128,y
 another:
@@ -292,9 +291,9 @@ decode_loop:
     dex
     bmi     init_x          ;if we hit $2ff, go back to $355
     lda     (data_ptr),y    ;foreach byte in the data buffer...
-    lsr     TWOS_BUFFER,x   ; grab the low two bits from the stuff at $300-$355
+    lsr     twos_buffer,x   ; grab the low two bits from the stuff at $300-$355
     rol                     ; and roll them into the low two bits of the byte
-    lsr     TWOS_BUFFER,x
+    lsr     twos_buffer,x
     rol     A
     sta     (data_ptr),y
     iny
