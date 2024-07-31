@@ -1,5 +1,6 @@
 BIOS_OBJECTS = bios.o char_io.o monitor.o floppy.o
 NOS_OBJECTS = nos/command_processor.o nos/dir_command.o nos/fs.o nos/mon_command.o nos/run_command.o nos/console.o
+BIOS_INCLUDES = monitor.inc char_io.inc globals.inc startup_interface.inc floppy.inc
 ROM_EMU_DEVICE = /dev/cu.usbmodem21401
 ROM_EMU_TOOL = ~/code/28pi256/upload.py
 
@@ -40,5 +41,5 @@ nesii_trunc.bin: nesii.bin
 nesii.bin: link.cfg $(BIOS_OBJECTS) floppy_startup.o
 	ld65 -m nesii.map -o nesii.bin -C link.cfg $(BIOS_OBJECTS) floppy_startup.o
 
-%.o: %.asm
+%.o: %.asm $(BIOS_INCLUDES)
 	ca65 $<

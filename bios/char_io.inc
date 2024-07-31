@@ -1,14 +1,19 @@
-SCREEN_ADDR = $00
-STRING_PTR = $03
-IS_SCROLLING = $05
-SCROLL_VALUE = $06
-CURRENT_KB_COL = $07
-CURRENT_KB_ROW = $08
-KEY_WAS_FOUND = $09
-LAST_KB_BIT = $0A
-LAST_PRESSED_KEY = $0B
+.ifndef char_io_inc
+    char_io_inc = 1
 
-.GLOBAL INITKEYBOARD
-.GLOBAL PRNTCHR
-.GLOBAL PRINTSTR
-.GLOBAL GETKEY
+    screen_addr             = $00
+    string_ptr              = $03
+    is_scrolling            = $05
+    scroll_value            = $06
+    current_keyboard_column = $07
+    current_keyboard_row    = $08
+    key_was_found           = $09
+    last_keyboard_hit       = $0a
+    last_pressed_key        = $0b
+
+    .global char_io_init_keyboard
+    .global char_io_printchr
+    .global char_io_printstr
+    .global char_io_getkey
+    .global char_io_init_screen
+.endif
