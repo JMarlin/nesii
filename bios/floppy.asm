@@ -4,9 +4,39 @@
 .global MON_WAIT
 .global ReadSector
 
+
 .global floppy_init
 floppy_init:
-    jsr floppy_off
+;Initialize drive state values
+    ldy #$00
+    sty track
+    sty cur_track
+    sty sector
+    sty cur_sector
+;Reset controller switches
+    lda #$60
+    sta slot_index        ;keep this around
+    tax
+    lda IWM_Q7_OFF        ;set to read mode
+    lda IWM_Q6_OFF
+    lda IWM_SEL_DRIVE_1   ;select drive 1
+    lda IWM_MOTOR_ON      ;spin it up
+; Blind-seek to track 0.
+    ldy #80               ;80 phases (40 tracks)
+seek_loop:
+    lda IWM_PH0_OFF,x     ;turn phase N off
+    tya
+    and #$03              ;mod the phase number to get 0-3
+    asl                   ;double it to 0/2/4/6
+    ora slot_index        ;add in the slot index
+    tax
+    lda IWM_PH0_ON,x      ;turn on phase 0, 1, 2, or 3
+    lda #86
+    jsr MON_WAIT          ;wait 19664 cycles
+    dey                   ;next phase
+    bpl seek_loop
+    lda IWM_PH0_OFF 
+    lda IWM_MOTOR_OFF
     rts
 
 
@@ -43,7 +73,7 @@ floppy_read:
 floppy_read_retry:
     inc r0
     beq floppy_read_exit
-    jsr ReadSector
+    jsr read_sector
     lda r15
     bne floppy_read_retry
 floppy_read_exit:
@@ -123,6 +153,175 @@ step_back:
     dec     cur_track
 step_back_done:
     rts
+
+
+.GLOBAL read_sector
+read_sector:
+    clc
+read_sector_c:
+    php
+    lda #$00
+    sta r15
+rdbyte1_start:
+    inc r15
+    beq read_sector_exit_fail_a
+    ldx #$00
+rdbyte1:
+    inx
+    beq read_sector_exit_fail_a
+    lda IWM_Q6_OFF
+    bpl rdbyte1
+check_d5:
+    eor #$d5
+    bne rdbyte1_start
+    nop
+rdbyte2_start:
+    ldx #$00
+rdbyte2:
+    inx
+    beq read_sector_exit_fail_a
+    lda IWM_Q6_OFF
+    bpl rdbyte2
+    cmp #$aa
+    bne check_d5
+    nop
+    ldx #$00
+rdbyte3:
+    inx
+    beq read_sector_exit_fail_a
+    lda IWM_Q6_OFF
+    bpl rdbyte3
+    cmp #$96
+    beq found_address
+    plp
+    bcc read_sector
+    eor #$ad
+    beq found_data
+    bne read_sector
+read_sector_exit_fail_a:
+    plp
+read_sector_exit_fail:
+    lda #$01
+    sta r15
+    rts
+found_address:
+    ldy #$03
+hdr_loop:
+    sta found_track
+    nop
+    ldx #$00
+adr_hdr_rdbyte1:
+    inx
+    beq read_sector_exit_fail_a
+    lda IWM_Q6_OFF
+    bpl adr_hdr_rdbyte1
+    rol A
+    sta bits
+    nop
+    nop
+    ldx #$00
+ adr_hdr_rdbyte2:
+    inx
+    beq read_sector_exit_fail_a
+    lda IWM_Q6_OFF
+    bpl adr_hdr_rdbyte2
+    and bits
+    dey
+    bne hdr_loop
+    plp
+    cmp sector
+    bne read_sector
+    lda found_track
+    cmp track
+    bne read_sector_exit_fail_a
+    bcs read_sector_c
+found_data:
+    ldy #86
+read_twos_loop:
+    sty bits
+    ldx #$00
+dat_twos_rdbyte1:
+    inx
+    beq read_sector_exit_fail
+    ldy IWM_Q6_OFF 
+    bpl dat_twos_rdbyte1
+    eor conv_tab-128,y
+    ldy bits
+    dey
+    sta TWOS_BUFFER,y
+    nop
+    nop
+    nop 
+    bne read_twos_loop
+read_sixes_loop:
+    sty bits
+    ldx #$00
+sixes_rdbyte2:
+    inx
+    beq read_sector_exit_fail
+    ldy IWM_Q6_OFF
+    bpl sixes_rdbyte2
+    eor conv_tab-128,y
+    ldy bits
+    sta (data_ptr),y
+    iny
+    nop
+    nop
+    bne read_sixes_loop
+    ldx #$00
+checksum_rdbyte3:
+    inx 
+    beq read_sector_exit_fail
+    ldy IWM_Q6_OFF
+    bpl checksum_rdbyte3
+    eor conv_tab-128,y
+another:
+    beq decode
+    lda #$ea
+    sta r14
+    jmp read_sector_exit_fail
+; 
+; Decode the 6+2 encoding.  The high 6 bits of each byte are in place, now we
+; just need to shift the low 2 bits of each in.
+; 
+decode:
+    ldy     #$00    ;update 256 bytes
+init_x:
+    ldx     #86     ;run through the 2-bit pieces 3x (86*3=258)
+decode_loop:
+    dex
+    bmi     init_x          ;if we hit $2ff, go back to $355
+    lda     (data_ptr),y    ;foreach byte in the data buffer...
+    lsr     TWOS_BUFFER,x   ; grab the low two bits from the stuff at $300-$355
+    rol                     ; and roll them into the low two bits of the byte
+    lsr     TWOS_BUFFER,x
+    rol     A
+    sta     (data_ptr),y
+    iny
+    bne     decode_loop
+    lda #$00
+    sta r15
+    rts
+
+
+conv_tab:
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$00,$01
+    .byte $ff,$ff,$02,$03,$ff,$04,$05,$06
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$07,$08
+    .byte $ff,$ff,$ff,$09,$0a,$0b,$0c,$0d
+    .byte $ff,$ff,$0e,$0f,$10,$11,$12,$13
+    .byte $ff,$14,$15,$16,$17,$18,$19,$1a
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+    .byte $ff,$ff,$ff,$1b,$ff,$1c,$1d,$1e
+    .byte $ff,$ff,$ff,$1f,$ff,$ff,$20,$21
+    .byte $ff,$22,$23,$24,$25,$26,$27,$28
+    .byte $ff,$ff,$ff,$ff,$ff,$29,$2a,$2b
+    .byte $ff,$2c,$2d,$2e,$2f,$30,$31,$32
+    .byte $ff,$ff,$33,$34,$35,$36,$37,$38
+    .byte $ff,$39,$3a,$3b,$3c,$3d,$3e,$3f
+
 
 sector_skew_table:
     .byte $00, $0d, $0b, $09, $07, $05, $03, $01, $0e, $0c, $0a, $08, $06, $04, $02, $0f

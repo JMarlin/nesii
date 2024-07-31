@@ -224,200 +224,9 @@ lda #>BOOT_MSG
 sta $04
 jsr PRINTSTR
 
-;Specify load from track 0, sector 0
-lda #$00
-sta track
-sta sector
-
-ldx     #$60
-lda     IWM_Q7_OFF,x
-lda     IWM_Q6_OFF,x
-lda     IWM_SEL_DRIVE_1,x
-lda     IWM_MOTOR_ON,x
-
-    ldy     #$00
-    sty track
-    sty sector
-
-    lda #$60
-    sta     slot_index        ;keep this around
-    tax
-    lda     IWM_Q7_OFF,x      ;set to read mode
-    lda     IWM_Q6_OFF,x
-    lda     IWM_SEL_DRIVE_1,x ;select drive 1
-    lda     IWM_MOTOR_ON,x    ;spin it up
-
-; 
-; Blind-seek to track 0.
-; 
-    ldy     #80               ;80 phases (40 tracks)
-seek_loop:
-    lda     IWM_PH0_OFF,x     ;turn phase N off
-    tya
-    and     #$03              ;mod the phase number to get 0-3
-    asl     A                 ;double it to 0/2/4/6
-    ora     slot_index        ;add in the slot index
-    tax
-    lda     IWM_PH0_ON,x      ;turn on phase 0, 1, 2, or 3
-    lda     #86
-    jsr     MON_WAIT          ;wait 19664 cycles
-    dey                       ;next phase
-    bpl     seek_loop
-    lda     IWM_PH0_OFF
-
-    ;Now that we know the drive is initialized, reflect that in the status vars
-    lda #$00
-    sta cur_sector
-    sta cur_track
-
+    jsr floppy_init
     jsr system_startup
     jmp init
-
-ReadSector:   clc
-.GLOBAL ReadSector
-ReadSector_C: php
-              lda #$00
-              sta r15
-rdbyte1_start:
-              inc r15
-              beq ReadSector_exit_fail_a
-              ldx #$00
-rdbyte1:      inx
-              beq ReadSector_exit_fail_a
-b:            lda IWM_Q6_OFF
-              bpl rdbyte1
-check_d5:     eor #$d5
-              bne rdbyte1_start
-              nop
-rdbyte2_start: ldx #$00
-rdbyte2:      inx
-              beq ReadSector_exit_fail_a
-c:            lda IWM_Q6_OFF
-              bpl rdbyte2
-              cmp #$aa
-              bne check_d5
-              nop
-              ldx #$00
-rdbyte3:      inx
-              beq ReadSector_exit_fail_a
-d:            lda IWM_Q6_OFF
-              bpl rdbyte3
-              cmp #$96
-              beq FoundAddress
-              plp
-              bcc ReadSector
-              eor #$ad
-              beq FoundData
-              bne ReadSector
-ReadSector_exit_fail_a:
-    plp
-ReadSector_exit_fail:
-    lda #$01
-    sta r15
-    rts
-FoundAddress:
-    ldy #$03
-hdr_loop:
-    sta found_track
-    nop
-    ldx #$00
-adr_hdr_rdbyte1:
-    inx
-    beq ReadSector_exit_fail_a
-e:  lda IWM_Q6_OFF
-    bpl adr_hdr_rdbyte1
-    rol A
-    sta bits
-    nop
-    nop
-    ldx #$00
- adr_hdr_rdbyte2:
-    inx
-    beq ReadSector_exit_fail_a
-j:  lda IWM_Q6_OFF
-    bpl adr_hdr_rdbyte2
-    and bits
-    dey
-    bne hdr_loop
-    plp
-    cmp sector
-    bne ReadSector ;TODO: only retry this ~32 times -- after that, we know we've failed to find the sector
-    lda found_track
-    cmp track
-    bne ReadSector_exit_fail_a
-    bcs ReadSector_C
-
-FoundData:
-    ldy #86
-read_twos_loop:
-    sty bits
-    ldx #$00
-dat_twos_rdbyte1:
-    inx
-    beq ReadSector_exit_fail
-g:  ldy IWM_Q6_OFF 
-    bpl dat_twos_rdbyte1
-    eor conv_tab-128,y
-    ldy bits
-    dey
-    sta TWOS_BUFFER,y
-    nop
-    nop
-    nop 
-    bne read_twos_loop
-
-read_sixes_loop:
-    sty bits
-    ldx #$00
-sixes_rdbyte2:
-    inx
-    beq ReadSector_exit_fail
-h:  ldy IWM_Q6_OFF
-    bpl sixes_rdbyte2
-    eor conv_tab-128,y
-    ldy bits
-    sta (data_ptr),y
-    iny
-    nop
-    nop
-    bne read_sixes_loop
-
-    ldx #$00
-checksum_rdbyte3:
-    inx 
-    beq ReadSector_exit_fail
-i:  ldy IWM_Q6_OFF
-    bpl checksum_rdbyte3
-    eor conv_tab-128,y
-another:
-    beq Decode
-    lda #$ea
-    sta r14
-    jmp ReadSector_exit_fail
-
-; 
-; Decode the 6+2 encoding.  The high 6 bits of each byte are in place, now we
-; just need to shift the low 2 bits of each in.
-; 
-Decode:
-    ldy     #$00              ;update 256 bytes
-init_x:
-    ldx     #86               ;run through the 2-bit pieces 3x (86*3=258)
-decode_loop:
-    dex
-    bmi     init_x           ;if we hit $2ff, go back to $355
-    lda     (data_ptr),y      ;foreach byte in the data buffer...
-    lsr     TWOS_BUFFER,x     ; grab the low two bits from the stuff at $300-$355
-    rol     A                 ; and roll them into the low two bits of the byte
-    lsr     TWOS_BUFFER,x
-    rol     A
-    sta     (data_ptr),y
-    iny
-    bne     decode_loop
-
-    lda #$00
-    sta r15
-    rts
 
 .global MON_WAIT
 MON_WAIT:
@@ -510,24 +319,6 @@ regs:
     .byte $30,$00,$00,$00
     .byte $00,$00,$00,$00
 
-conv_tab:
-    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
-    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
-    .byte $ff,$ff,$ff,$ff,$ff,$ff,$00,$01
-    .byte $ff,$ff,$02,$03,$ff,$04,$05,$06
-    .byte $ff,$ff,$ff,$ff,$ff,$ff,$07,$08
-    .byte $ff,$ff,$ff,$09,$0a,$0b,$0c,$0d
-    .byte $ff,$ff,$0e,$0f,$10,$11,$12,$13
-    .byte $ff,$14,$15,$16,$17,$18,$19,$1a
-    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
-    .byte $ff,$ff,$ff,$1b,$ff,$1c,$1d,$1e
-    .byte $ff,$ff,$ff,$1f,$ff,$ff,$20,$21
-    .byte $ff,$22,$23,$24,$25,$26,$27,$28
-    .byte $ff,$ff,$ff,$ff,$ff,$29,$2a,$2b
-    .byte $ff,$2c,$2d,$2e,$2f,$30,$31,$32
-    .byte $ff,$ff,$33,$34,$35,$36,$37,$38
-    .byte $ff,$39,$3a,$3b,$3c,$3d,$3e,$3f
-
 CHAR_TILES:
     .incbin "blob/font.chr"
 
@@ -542,7 +333,7 @@ jsr load_next_sector ;FFCC
 rts
 jmp init             ;FFD0
 rts
-jsr ReadSector       ;FFD4
+jsr read_sector      ;FFD4
 rts
 jsr MON_WAIT         ;FFD8
 rts
