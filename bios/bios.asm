@@ -187,37 +187,18 @@ wait_loop_a:
     bne wait_loop_b
     rts
 
-;NOTE: When the drive is initialized, we are aligned with phase-0
-;      Therefore, we need to step to the next ODD numbered step FIRST
-step_track:
-    lda     cur_track
-    and     #$01
-    asl     
-    asl     
-    ora     #$62
-    tax
-    lda     iwm_ph0_on,x      ;turn on phase 0, 1, 2, or 3
-    lda     #86
-    jsr     mon_wait          ;wait 19664 cycles
-    lda     iwm_ph0_off,x     ;turn phase N off
-    inx
-    inx
-    txa
-    and     #$f7
-    tax
-    lda     iwm_ph0_on,x
-    lda     #86
-    jsr     mon_wait
-    lda     iwm_ph0_off,x
-    inc     cur_track
-    rts
-
 .global load_next_sector
 load_next_sector:
+    lda cur_track
+    sta r0
     lda cur_sector
-    ldx cur_track
-    jsr floppy_read
-    lda r15
+    sta r1
+    lda #<global_bios_sector_buffer
+    sta r2
+    lda #>global_bios_sector_buffer
+    sta r3
+    jsr floppy_sector_buffer_load
+    lda r15 ;TODO: this is currently a global success flag for floppy read that needs to be done better
     bne next_sector_done
     inc cur_sector
     lda cur_sector
@@ -225,16 +206,12 @@ load_next_sector:
     bne next_sector_done
     lda #$00
     sta cur_sector
-    jsr step_track
+    jsr floppy_step_forward
 next_sector_done:
     rts
 
 .global load_boot_sector
 load_boot_sector:
-    lda #$00
-    sta data_ptr          ;Store page-aligned
-    lda #>boot1           ;Target is the NES RAM boot area
-    sta data_ptr+1
     jsr load_next_sector
     lda r15
     beq load_boot_sector_exit
@@ -275,13 +252,13 @@ jsr load_next_sector          ;FFCC
 rts
 jmp monitor_start             ;FFD0
 rts
-jsr read_sector               ;FFD4
+jsr floppy_sector_buffer_load ;FFD4 
 rts
 jsr mon_wait                  ;FFD8
 rts
 jsr char_io_getkey            ;FFDC
 rts
-jsr floppy_read               ;FFE0
+jsr monitor_start             ;FFE0 - temporary fail-if-tried (used to be direct read sector call we don't want to expose anymore)
 rts
 jsr floppy_init               ;FFE4
 rts

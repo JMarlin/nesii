@@ -1,11 +1,11 @@
 .segment "CODE"
-.include "../globals.inc"
-.include "console.inc"
 .include "hello_command.inc"
 .include "mon_command.inc"
 .include "dir_command.inc"
 .include "echo_command.inc"
 .include "run_command.inc"
+.include "../system/console.inc"
+.include "../../bios/globals.inc"
 
 basic_cold_start = $e000
 apple_ii_cout = $fded 
@@ -53,7 +53,7 @@ prompt_loop:
     sta text_buffer
     sty text_index
 type_loop:
-    jsr getc
+    jsr bios_getc
     cmp #$0d
     bne stash_character
     lda #$00
@@ -67,7 +67,7 @@ stash_character:
     sta text_buffer,y
     iny
     sty text_index
-    jsr printc
+    jsr bios_printc
     clc
     bcc type_loop
 

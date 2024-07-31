@@ -1,6 +1,6 @@
 .segment "CODE"
 .include "../nos_calls.inc"
-.include "console.inc"
+.include "../system/console.inc"
 
 dir_str_ptr = $c2
 

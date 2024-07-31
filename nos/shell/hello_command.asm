@@ -1,5 +1,5 @@
 .segment "CODE"
-.include "console.inc"
+.include "../system/console.inc"
 
 .global hello_cmd_str
 hello_cmd_str: .byte "HELLO", $00

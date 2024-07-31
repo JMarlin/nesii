@@ -1,7 +1,6 @@
 .segment "CODE"
-.include "../globals.inc"
-.include "../rom_constants.inc"
 .include "binary_loader.inc"
+.include "../../bios/globals.inc"
 
 .global system_startup
 system_startup:

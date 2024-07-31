@@ -1,7 +1,6 @@
 .segment "CODE"
 .include "fs.inc"
-.include "../globals.inc"
-.include "../rom_constants.inc"
+.include "../../bios/globals.inc"
 
 .global binary_loader_load
 binary_loader_load:

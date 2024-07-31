@@ -1,12 +1,16 @@
 .ifndef floppy_inc
     floppy_inc = 1
 
+    .include "floppy_types.inc"
+
     .global floppy_init
     .global floppy_seek
     .global floppy_read
     .global floppy_on
     .global floppy_off
-    .global read_sector
+    .global floppy_sector_buffer_load
+    .global floppy_step_forward
+    .global floppy_step_back
 
     twos_buffer        = $0200   ;holds the 2-bit chunks
     boot1              = $0400   ;buffer for next stage of loader

@@ -12,6 +12,12 @@ floppy_init:
     sty cur_track
     sty sector
     sty cur_sector
+;Initialize the global floppy sector buffer structure
+    ldy #$ff
+    sty global_bios_sector_buffer + fsb_current_track_offset
+    sty global_bios_sector_buffer + fsb_current_sector_offset
+    ldy #>boot1
+    sty global_bios_sector_buffer + fsb_buffer_page_offset
 ;Reset controller switches
     lda #$60
     sta slot_index        ;keep this around
@@ -20,7 +26,7 @@ floppy_init:
     lda iwm_q6_off
     lda iwm_select_drive_1   ;select drive 1
     lda iwm_motor_on      ;spin it up
-; Blind-seek to track 0.
+;Blind-seek to track 0.
     ldy #80               ;80 phases (40 tracks)
 seek_loop:
     lda iwm_ph0_off,x     ;turn phase N off
@@ -51,19 +57,41 @@ floppy_off:
     rts
 
 
-;Expects track number in X, sector number in A
-;data_ptr is the target it will read into
-.global floppy_read 
-floppy_read:
-    pha
+;Expects track/sector to read in r0/r1, address of sector buffer to use in r3:r2
+.global floppy_sector_buffer_load 
+floppy_sector_buffer_load:
+;Check whether this buffer is already loaded with the expected data
+;Check track
+    ldy #fsb_current_track_offset
+    lda (r2),y
+    cmp r0
+    bne floppy_sector_buffer_load_do_load
+;Check sector
+    ldy #fsb_current_sector_offset
+    lda (r2),y
+    cmp r1
+    bne floppy_sector_buffer_load_do_load
+    rts
+floppy_sector_buffer_load_do_load:
     jsr floppy_on
-    txa 
-    jsr floppy_seek
-    sta track
-    pla
+    jsr floppy_seek ;Expects track in r0
+;Load params into the Woz code, making sure to update the buffer structure in the process
+    ldy #fsb_current_track_offset
+    lda r0
+    sta (r2),y
+    sta track ;Used by Woz sector read code
+    ldy #fsb_current_sector_offset
+    lda r1
+    sta (r2),y
     tay
     lda sector_skew_table,y
-    sta sector
+    sta sector ;Used by Woz sector read code
+;Load buffer data page from structure and place into Woz sector read code param
+    lda #$00      ;All buffers are page-aligned
+    sta data_ptr
+    ldy #fsb_buffer_page_offset
+    lda (r2),y
+    sta data_ptr+1
 ;Stash clobbered registers
     lda r0
     pha
@@ -83,35 +111,34 @@ floppy_read_exit:
     rts
 
 
+;Expects target track number in r0
 .global floppy_seek
 floppy_seek:
-    pha
 floppy_seek_top:
     ;If we are already at the requested track, nothing to do
-    pla
+    lda r0
     cmp cur_track
-    pha
     beq floppy_seek_done
     bcc floppy_seek_step_back
-    jsr step_forward
+    jsr floppy_step_forward
     clc
     bcc floppy_seek_top
 floppy_seek_step_back:
-    jsr step_back
+    jsr floppy_step_back
     clc
     bcc floppy_seek_top
 floppy_seek_done:
-    pla
     rts
 
 
-step_forward:
+.global floppy_step_forward
+floppy_step_forward:
     lda     cur_track
     cmp     #$23
-    beq     step_forward_done
+    beq     floppy_step_forward_done
     and     #$01
-    asl     A
-    asl     A
+    asl      
+    asl      
     ora     #$62
     tax
     lda     iwm_ph0_on,x      
@@ -120,19 +147,19 @@ step_forward:
     inx
     inx
     txa
-    and     #$F7
+    and     #$f7
     tax
     lda     iwm_ph0_on,x
     jsr     mon_wait
     lda     iwm_ph0_off,x
     inc     cur_track
-step_forward_done:
+floppy_step_forward_done:
     rts
 
 
-step_back:
+floppy_step_back:
     lda     cur_track
-    beq     step_back_done
+    beq     floppy_step_back_done
     and     #$01
     asl     
     asl     
@@ -150,11 +177,10 @@ step_back:
     jsr     mon_wait
     lda     iwm_ph0_off,x
     dec     cur_track
-step_back_done:
+floppy_step_back_done:
     rts
 
 
-.GLOBAL read_sector
 read_sector:
     clc
 read_sector_c:

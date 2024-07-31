@@ -1,22 +1,24 @@
 .ifndef console_inc
     console_inc = 1
 
-    .include "../rom_constants.inc"
-    .include "../globals.inc"
+    .include "../../bios/globals.inc"
+    .include "../../bios/calls.inc"
 
-    console_init   = init_keyboard
-    console_prints = prints
-    console_printc = printc
-    console_getc   = getc
+    string_pointer = $03
+
+    console_init   = bios_init_keyboard
+    console_prints = bios_prints
+    console_printc = bios_printc
+    console_getc   = bios_getc
 
     .global print_hex_byte
     .global print_hex_nybble
 
     .macro print pointer
         lda #<pointer
-        sta string_ptr
+        sta string_pointer
         lda #>pointer
-        sta string_ptr+1
-        jsr prints
+        sta string_pointer+1
+        jsr bios_prints
     .endmacro
 .endif

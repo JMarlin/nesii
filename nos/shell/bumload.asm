@@ -1,9 +1,9 @@
 .segment "CODE"
-.include "../nos_calls.inc"
-.include "../globals.inc"
-.include "../system/console.inc"
 .include "run_command.inc"
 .include "bumload.inc"
+.include "../nos_calls.inc"
+.include "../system/console.inc"
+.include "../../bios/globals.inc"
 
 bumload_load_bums:
     ;Stash clobbered registers

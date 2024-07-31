@@ -1,5 +1,5 @@
 .segment "CODE"
-.include "console.inc"
+.include "../system/console.inc"
 
 .global echo_cmd_str
 echo_cmd_str: .byte "ECHO", $00
@@ -16,9 +16,9 @@ echo_cmd_entry:
     jsr console_printc
 
     pla
-    sta string_ptr
+    sta string_pointer
     lda #>text_buffer
-    sta string_ptr+1
+    sta string_pointer+1
     jsr console_prints
 
     rts

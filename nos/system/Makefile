@@ -1,4 +1,4 @@
-SYSTEM_INCLUDES = ../../bios/startup_interface.inc ../globals.inc ../nos_calls.inc ../rom_constants.inc binary_loader.inc console.inc fs.inc system_entry.inc
+SYSTEM_INCLUDES = ../../bios/startup_interface.inc ../../bios/globals.inc ../../bios/calls.inc ../nos_calls.inc binary_loader.inc console.inc fs.inc system_entry.inc
 SYSTEM_OBJECTS = boot_sector.o fs.o binary_loader.o system_entry.o call_map.o
 SYSTEM_TARGETS = system.bin
 

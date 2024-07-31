@@ -1,5 +1,5 @@
 .segment "CODE"
-.include "console.inc"
+.include "../system/console.inc"
 .include "../nos_calls.inc"
 
 .global run_cmd_str

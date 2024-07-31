@@ -1,8 +1,12 @@
 .segment "CODE"
 .include "fs.inc"
-.include "../rom_constants.inc"
 .include "console.inc"
-.include "../globals.inc"
+.include "../../bios/calls.inc"
+.include "../../bios/floppy_types.inc"
+.include "../../bios/globals.inc"
+
+;TODO: WE CANNOT ACCESS THE BIOS DATA DIRECTLY, NEED TO USE SECTOR BUFFER INTERFACE
+data_ptr = $26
 
 
 ;Expects r1:r0 to contain a pointer to a callback routine and r3:r2
@@ -14,93 +18,111 @@
 ;Callback should return 0 in r0 to early exit or non-0 to continue
 .global fs_scan_catalog
 fs_scan_catalog:
-
     ;Stash registers that we clobber
     lda r4
     pha
     lda r5
     pha
-
-    jsr floppy_on
-
+    lda r6
+    pha
+    lda r7
+    pha
+    ;Start the foppy (in case it wasn't already on)
+    jsr bios_floppy_on
+    ;Stash the callback pointer
+    lda r0
+    sta r6
+    lda r1
+    sta r7
+    ;Fix the MSB of the pointer we hand back to the caller
+    lda #>sector_buffer
+    sta r5
     ;Read the VTOC (track 0x11, sector 0x0) into a buffer for examination
-    lda #<sector_buffer
-    sta data_ptr
-    lda #>sector_buffer
-    sta data_ptr+1
-    ldx #$11
+    lda #$11
+    sta r0
     lda #$00
-    jsr floppy_read ;TODO: Exit on failure
-
-fs_catalog_chain_next:
-    ;Read the next catalog sector
-    lda #<sector_buffer
-    sta data_ptr
-    lda #>sector_buffer
-    sta data_ptr+1
+    sta r1
+    ;Trick the entry process loop into thinking we're at the end of a catalog sector and need to load the next one
+    sta r4
+fs_process_next_entry:
+    ;Make sure the catalog sector is loaded (current catalog T/S should be in r0/r1)
+    ;Stash the user value
+    lda r2
+    pha
+    lda r3
+    pha
+    ;Load using the default bios buffer
+    lda #<global_bios_sector_buffer
+    sta r2
+    lda #<global_bios_sector_buffer
+    sta r3
+    jsr bios_floppy_sector_buffer_load ;TODO: Exit on failure
+    ;Restore the user value
+    pla
+    sta r3
+    pla
+    sta r2
+    ;If we're not at the end of the sector data, don't trigger a load of the next catalog entry
+    lda r4
+    bne fs_catalog_chain_submit_to_callback
+    ;If we're at the end of the catalog sector, switch to the next one in the chain
     lda sector_buffer+1
-    beq fs_catalog_chain_finished_exit
-    tax
+    sta r0
+    beq fs_catalog_chain_done ;A zero in the track number indicates end of chain, and a zero in r0 indicates normal exit to our caller
+    ;Load in the next chain entry's sector number
     lda sector_buffer+2
-    jsr floppy_read ;TODO: Exit on failure
-
-    lda #$0B
-    sta data_ptr
-
-fs_entry_process:
+    sta r1
+    ;Reset the read cursor to the first entry
+    lda #$0b
+    sta r4
+fs_catalog_chain_submit_to_callback:
     ;Check for zero track number, which indicates empty record
     ldy #$00
-    lda (data_ptr),y
-    beq fs_entry_process_next
+    lda (r4),y
+    beq fs_process_next_entry
     ;Check for FF track number, which indicates deleted record
     tax
     inx
-    beq fs_entry_process_next
-
-;Call back to the user with the entry pointer in r5:r4
-
+    beq fs_process_next_entry
+    ;Call back to the user with the entry pointer in r5:r4
     ;Stash the register that will be clobbered with the retval
     lda r0
     pha
-
-    lda #>sector_buffer
-    sta r5
-    lda data_ptr
-    sta r4
     jsr fs_callback_trampoline
-
-;If callback returned 0, exit early
+    ;Get callback return value, restore stashed register
     ldx r0
     pla 
     sta r0
     txa
-    cmp #$00
-    beq fs_catalog_chain_callback_exit
-
-fs_entry_process_next:
-    lda data_ptr
+    ;If the callback returned nonzero, keep processing entries
+    bne fs_catalog_chain_proceed
+    ;Callback returned zero, exit early indicating that the callback triggered the exit
+    sta r0
+    inc r0
+    bne fs_catalog_chain_done
+fs_catalog_chain_proceed:
+    ;Step the data pointer forward to the next entry
+    lda r4
     clc
     adc #$23
-    sta data_ptr
-    bne fs_entry_process
-    beq fs_catalog_chain_next
-
-fs_catalog_chain_finished_exit:
-    lda #$00
-    sta r0
-    beq fs_catalog_chain_done
-fs_catalog_chain_callback_exit:
-    lda #$01
-    sta r0
+    sta r4
+    clc
+    bcc fs_process_next_entry
 fs_catalog_chain_done:
-    jsr floppy_off
-
+    ;Restore the unclobbered portion of the callback pointer
+    lda r7
+    sta r1
+    ;Done using the floppy
+    jsr bios_floppy_off
 ;Restore clobbered registers
+    pla
+    sta r6
+    pla
+    sta r7
     pla
     sta r5
     pla
     sta r4
-
     rts
 
 
@@ -231,7 +253,7 @@ _fs_load_active_ts_list_sector:
     tax
     ldy #ofi_active_ts_sector_offset
     lda (open_file_info_ptr_0),y
-    jsr floppy_read ;TODO: Exit on failure
+    jsr bios_floppy_sector_buffer_load ;TODO: use this call properly ;TODO: Exit on failure
     rts
 
 
@@ -281,7 +303,7 @@ fs_read_file_byte:
 ;Read in the current T/S list sector since we'll need it whether we're doing a normal sector load
 ;or whether we need to advance to the next T/S list sectors
 ;TODO: maintain a sector buffer per open file structure rather than globally
-    jsr floppy_on
+    jsr bios_floppy_on
     jsr _fs_load_active_ts_list_sector
 ;Increment (by a word) and load the current T/S list entry index
     ldy #ofi_current_ts_entry_offset
@@ -321,7 +343,7 @@ fs_read_file_byte_load_data:
     jsr _fs_load_data_sector_address_from_loaded_ts_list
     jsr _fs_populate_sector_buffer
 fs_read_file_byte_exit:
-    jsr floppy_off
+    jsr bios_floppy_off
     pla
     sta r1
     lda #$01
@@ -359,7 +381,7 @@ fs_rewind_file:
     sta (r0),y
     ;Look up the first T/S list TS entry and copy it into the active
     ;data sector TS address field
-    jsr floppy_on
+    jsr bios_floppy_on
     lda #<sector_buffer
     sta r0
     lda #>sector_buffer
@@ -367,7 +389,7 @@ fs_rewind_file:
     jsr _fs_load_active_ts_list_sector
     jsr _fs_load_data_sector_address_from_loaded_ts_list
     jsr _fs_populate_sector_buffer
-    jsr floppy_off
+    jsr bios_floppy_off
     ;Restore clobbered registers
     pla
     sta r1
@@ -406,7 +428,7 @@ _fs_populate_sector_buffer_load:
     lda #>sector_buffer
     sta data_ptr+1
     tya
-    jsr floppy_read ;TODO: Exit on failure
+    jsr bios_floppy_sector_buffer_load ;TODO: use this call properly ;TODO: Exit on failure
 _fs_populate_sector_buffer_exit:
     rts
 
@@ -464,6 +486,6 @@ fs_open_file_exit:
 
 
 fs_callback_trampoline:
-    jmp (r0)
+    jmp (r6)
 
 
