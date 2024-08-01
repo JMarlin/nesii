@@ -23,7 +23,7 @@
     iwm_select_drive_1 = $c0ea   ;selects drive 1
     iwm_q6_off         = $c0ec   ;read
     iwm_q7_off         = $c0ee   ;WP sense/read
-    cart_switches      = $d000
+    cart_switches      = $5000
     data_ptr           = $26     ;pointer to BOOT1 data buffer
     slot_index         = $2b     ;slot number << 4
     bits               = $3c     ;temp storage for bit manipulation

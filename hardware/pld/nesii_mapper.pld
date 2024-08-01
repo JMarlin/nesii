@@ -1,17 +1,10 @@
 Name       NESII_MAPPER;
-
 Partno     NESII_MAPPER;
-
 Date       08/28/23;
-
 Revision   01;
-
 Designer   track_zero;
-
 Company    Makaira;
-
 Device     g16v8ma;
-
 
 
 /** Inputs **/ 
@@ -37,7 +30,7 @@ PIN    11 = ROMSELB;
 
 /** Outputs **/
 
-PIN    12 = UNUSED; 
+PIN    12 = UTILITY_RAM_SELECT; 
 PIN    13 = AII_DEVSELB;
 PIN    14 = VRAM_MIRROR_OUT;
 PIN    15 = SWITCH_CLK;
@@ -48,7 +41,9 @@ PIN    19 = BIOS_ROM_CEB;
 
 /** Logic Equations **/
 
-UNUSED = 'b'1;
+/* Utility RAM exists at 0x6000-0x7FFF */
+UTILITY_RAM_SELECT =
+  (!(ROMSELB & M2))/*NESSELB*/ # !CA14 # !CA13;
 
 /* Dev select is triggered at 0xCXXX unless Switch B is on */
 AII_DEVSELB =
@@ -60,9 +55,9 @@ VRAM_MIRROR_OUT =
     (( (SW_B & SW_A)) & VRAM_MIRROR_IN_A)
   # ((!(SW_B & SW_A)) & VRAM_MIRROR_IN_B); 
 
-/* If Switch B is not set, Clock the data bus into Switch A and Switch B on a write to 0xDXXX */ 
+/* If Switch B is not set, Clock the data bus into Switch A and Switch B on a write to 0x5XXX */ 
 SWITCH_CLK = 
-    (!SW_B) & (!CPU_RWB) & (!ROMSELB) & (!M2) & CA14 & (!CA13) & CA12; 
+    !(CPU_WRB & (ROMSELB & M2) /*!NESSELB*/ & CA14 & (!CA13) & CA12); 
 
 /* A14 on the program RAM is 
    - 1 when the switches are 0b00

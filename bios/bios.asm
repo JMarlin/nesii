@@ -57,7 +57,7 @@ copy_next_bios_byte:
 ;No need for jumping to any kind of stub code, we should read the exact same thing out of RAM
 ;after the mapping switch that we would have run out of ROM if the copy happened correctly
     lda #$02
-    sta $d000
+    sta $5000
 
 rawf=139
 ;Initialize the APU so we can make a debug beep
