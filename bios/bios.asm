@@ -32,33 +32,6 @@ ppu_vblank_wait3:
     bit $2002
     bpl ppu_vblank_wait3
 
-;Run the BIOS out of RAM to allow for BIOS updates
-;Copy ourself from E000-FFFF to A000-BFFF
-    lda #$00
-    sta r0
-    sta r2
-    lda #$e0
-    sta r3
-    lda #$a0
-    sta r1
-    ldy #$00
-copy_next_bios_byte:
-    lda (r2),y
-    sta (r0),y
-    inc r2
-    inc r0
-    bne copy_next_bios_byte
-    inc r3
-    inc r1
-    lda r1
-    cmp #$c0
-    bne copy_next_bios_byte
-;Switch to all-RAM mapping
-;No need for jumping to any kind of stub code, we should read the exact same thing out of RAM
-;after the mapping switch that we would have run out of ROM if the copy happened correctly
-    lda #$02
-    sta $5000
-
 rawf=139
 ;Initialize the APU so we can make a debug beep
 init_apu:

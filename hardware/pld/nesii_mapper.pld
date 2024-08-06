@@ -45,19 +45,19 @@ PIN    19 = BIOS_ROM_CEB;
 UTILITY_RAM_SELECT =
   (!(ROMSELB & M2))/*NESSELB*/ # !CA14 # !CA13;
 
-/* Dev select is triggered at 0xCXXX unless Switch B is on */
+/* Dev select is triggered at 0xEXXX unless Switch B is on */
 AII_DEVSELB =
     (SW_B)
-  # (ROMSELB # !CA14 # CA13 # CA12);
+  # (ROMSELB # !CA14 # !CA13 # CA12);
 
 /* If both switches are on, MIRRORING_A is passed through. In all other cases, MIRRORING B is */
 VRAM_MIRROR_OUT = 
     (( (SW_B & SW_A)) & VRAM_MIRROR_IN_A)
   # ((!(SW_B & SW_A)) & VRAM_MIRROR_IN_B); 
 
-/* If Switch B is not set, Clock the data bus into Switch A and Switch B on a write to 0x5XXX */ 
+/* If Switch B is not set, Clock the data bus into Switch A and Switch B on a write to 0xFXXX */ 
 SWITCH_CLK = 
-    !(CPU_WRB & (ROMSELB & M2) /*!NESSELB*/ & CA14 & (!CA13) & CA12); 
+    (!SW_B) & (!CPU_RWB) & (!ROMSELB) & (!M2) & CA14 & CA13 & CA12; 
 
 /* A14 on the program RAM is 
    - 1 when the switches are 0b00
@@ -69,19 +69,17 @@ PRG_RAM_A14 =
 CPU_WRB = !CPU_RWB;
 
 /* RAM is selected if:
-    - We're in the low half of the cart
+    - We're in 0x8000-0xDFFF
     - Switch B is on
-    - We're in mode 2 and accessing the ROM area */
 PRG_RAM_CEB = !(
     (!ROMSELB) & (
-        (!CA14)
+        (!(CA14 & CA13))
       # (SW_B)
-      # ((!SW_B) & SW_A & CA14 & CA13)
     )
 );
 
-/* ROM is selected at 0xEXXX - 0xFXXX if we are in mode 0 */
-BIOS_ROM_CEB = ROMSELB # !CA14 # !CA13 # SW_B # SW_A;
+/* ROM is selected at 0xFXXX - 0xFFFF if we are in mode 0 */
+BIOS_ROM_CEB = ROMSELB # !CA14 # !CA13 # !CA12 # SW_B # SW_A;
 
 
 

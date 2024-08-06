@@ -14,16 +14,16 @@
 
     twos_buffer        = $0200   ;holds the 2-bit chunks
     boot1              = $0400   ;buffer for next stage of loader
-    iwm_ph0_off        = $c080   ;stepper motor control
-    iwm_ph0_on         = $c081   ;stepper motor control
-    iwm_ph2_off        = $c084
-    iwm_ph2_on         = $c085
-    iwm_motor_on       = $c0e9   ;starts drive spinning
-    iwm_motor_off      = $c0e8
-    iwm_select_drive_1 = $c0ea   ;selects drive 1
-    iwm_q6_off         = $c0ec   ;read
-    iwm_q7_off         = $c0ee   ;WP sense/read
-    cart_switches      = $5000
+    iwm_ph0_off        = $e080   ;stepper motor control
+    iwm_ph0_on         = $e081   ;stepper motor control
+    iwm_ph2_off        = $e084
+    iwm_ph2_on         = $e085
+    iwm_motor_on       = $e0e9   ;starts drive spinning
+    iwm_motor_off      = $e0e8
+    iwm_select_drive_1 = $e0ea   ;selects drive 1
+    iwm_q6_off         = $e0ec   ;read
+    iwm_q7_off         = $e0ee   ;WP sense/read
+    cart_switches      = $f000
     data_ptr           = $26     ;pointer to BOOT1 data buffer
     slot_index         = $2b     ;slot number << 4
     bits               = $3c     ;temp storage for bit manipulation
