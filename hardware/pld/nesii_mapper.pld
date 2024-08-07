@@ -4,7 +4,8 @@ Date       08/28/23;
 Revision   01;
 Designer   track_zero;
 Company    Makaira;
-Device     g16v8ma;
+Assembly   NESII_MAPPER;
+Location   NESII_MAPPER; Device     g16v8ma;
 
 
 /** Inputs **/ 
@@ -55,9 +56,9 @@ VRAM_MIRROR_OUT =
     (( (SW_B & SW_A)) & VRAM_MIRROR_IN_A)
   # ((!(SW_B & SW_A)) & VRAM_MIRROR_IN_B); 
 
-/* If Switch B is not set, Clock the data bus into Switch A and Switch B on a write to 0xFXXX */ 
+/* If Switch B is not set, drop the switch clock line on a write to 0xFXXX and latch the data bus on the end of the RWB */ 
 SWITCH_CLK = 
-    (!SW_B) & (!CPU_RWB) & (!ROMSELB) & (!M2) & CA14 & CA13 & CA12; 
+  	!( (!CPU_RWB) & (!ROMSELB) & CA14 & CA13 & CA12 & (!SW_B) );
 
 /* A14 on the program RAM is 
    - 1 when the switches are 0b00
@@ -78,8 +79,8 @@ PRG_RAM_CEB = !(
     )
 );
 
-/* ROM is selected at 0xFXXX - 0xFFFF if switch B is off*/
-BIOS_ROM_CEB = ROMSELB # !CA14 # !CA13 # !CA12 # SW_B;
+/* ROM is selected at 0xFXXX - 0xFFFF if switch B is off and the CPU is not writing (avoid collisions with switch write)*/
+BIOS_ROM_CEB = CPU_WRB # ROMSELB # !CA14 # !CA13 # !CA12 # SW_B;
 
 
 
