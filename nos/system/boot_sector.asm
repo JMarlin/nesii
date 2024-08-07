@@ -4,7 +4,8 @@
 .include "../../bios/floppy_types.inc"
 .include "appleii.inc"
 
-apple_ii_message_address = apple_ii_message_string + $400 ;NES loads at $400, but Apple II loads at $800 
+apple_ii_message_address = (apple_ii_message_string - *) + $800  ;Recalculate the Apple II address based on offset, AII loads at $800 
+nos_message_address = (nos_message_string - *) + $400 ;Recalculate the message string since the boot sector is actually loaded at $400
 
 .byte $01 ;To match apple ][ layout
 
@@ -19,16 +20,16 @@ boot_sector_start:
     cmp #'S'
     bne apple_ii_message
 
-    print nos_message_string
+    print nos_message_address
 
 load_boot_tracks:
-    lda #$05
+    lda #$60
     sta global_bios_sector_buffer + fsb_buffer_page_offset
 get_next_boot_track:
     jsr bios_load_next_sector
     inc global_bios_sector_buffer + fsb_buffer_page_offset
     lda global_bios_sector_buffer + fsb_buffer_page_offset
-    cmp #$08
+    cmp #$70
     bne get_next_boot_track
 ;Make sure we restore the global bios sector buffer address
     lda #$04

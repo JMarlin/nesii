@@ -1,13 +1,12 @@
 UTILS = ../build_util
 CIDERPRESS2 = ~/Downloads/cp2_1.0.2_osx-x64_fd
 
-.PHONY: all
 all: nos.do
 
+.PHONY: clean
 clean:
 	make clean -C system
 	make clean -C shell
-	make clean -C bums/tron
 	rm -f *.bin *.do
 
 system/system.bin: 
@@ -16,17 +15,12 @@ system/system.bin:
 shell/SHELL:
 	make -C shell
 
-bums/tron/TRON.BUM:
-	make -C bums/tron
-
-nos.do: system/system.bin shell/SHELL bums/tron/TRON.BUM
+nos.do: system/system.bin shell/SHELL 
 	$(CIDERPRESS2)/cp2 cdi --overwrite nos_data.do 140k DOS	
 	$(CIDERPRESS2)/cp2 add nos_data.do shell/SHELL
 	$(CIDERPRESS2)/cp2 sa nos_data.do SHELL type=bin
-	$(CIDERPRESS2)/cp2 add nos_data.do bums/tron/TRON.BUM
-	$(CIDERPRESS2)/cp2 sa nos_data.do TRON.BUM type=bin
-	dd if=nos_data.do of=nos_data.bin bs=256 skip=16
-	dd if=/dev/zero of=nos_boot_padding.bin bs=256 count=12
+	dd if=nos_data.do of=nos_data.bin bs=256 skip=32
+	dd if=/dev/zero of=nos_boot_padding.bin bs=256 count=15
 	cat system/system.bin > nos.do
 	cat nos_boot_padding.bin >> nos.do
 	cat nos_data.bin >> nos.do

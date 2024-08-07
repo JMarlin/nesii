@@ -225,13 +225,13 @@ jsr load_next_sector          ;FFCC
 rts
 jmp monitor_start             ;FFD0
 rts
-jsr floppy_sector_buffer_load ;FFD4 
+jsr monitor_start             ;FFD4 
 rts
 jsr mon_wait                  ;FFD8
 rts
 jsr char_io_getkey            ;FFDC
 rts
-jsr monitor_start             ;FFE0 - temporary fail-if-tried (used to be direct read sector call we don't want to expose anymore)
+jsr floppy_sector_buffer_load ;FFE0
 rts
 jsr floppy_init               ;FFE4
 rts
