@@ -70,7 +70,7 @@ CPU_WRB = !CPU_RWB;
 
 /* RAM is selected if:
     - We're in 0x8000-0xDFFF
-    - Switch B is on
+    - Switch B is on  */
 PRG_RAM_CEB = !(
     (!ROMSELB) & (
         (!(CA14 & CA13))
@@ -78,8 +78,8 @@ PRG_RAM_CEB = !(
     )
 );
 
-/* ROM is selected at 0xFXXX - 0xFFFF if we are in mode 0 */
-BIOS_ROM_CEB = ROMSELB # !CA14 # !CA13 # !CA12 # SW_B # SW_A;
+/* ROM is selected at 0xFXXX - 0xFFFF if switch B is off*/
+BIOS_ROM_CEB = ROMSELB # !CA14 # !CA13 # !CA12 # SW_B;
 
 
 
