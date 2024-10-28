@@ -37,7 +37,7 @@ PIN    11 = ROMSELB;
 
 /** Outputs **/
 
-PIN    12 = UNUSED; 
+PIN    12 = PRG_RAM_A13; 
 PIN    13 = AII_DEVSELB;
 PIN    14 = VRAM_MIRROR_OUT;
 PIN    15 = SWITCH_CLK;
@@ -48,7 +48,7 @@ PIN    19 = BIOS_ROM_CEB;
 
 /** Logic Equations **/
 
-UNUSED = 'b'1;
+PRG_RAM_A13 = CA13;
 
 /* Dev select is triggered at 0xCXXX unless Switch B is on */
 AII_DEVSELB =
@@ -62,7 +62,7 @@ VRAM_MIRROR_OUT =
 
 /* If Switch B is not set, Clock the data bus into Switch A and Switch B on a write to 0xDXXX */ 
 SWITCH_CLK = 
-    (!SW_B) & (!CPU_RWB) & (!ROMSELB) & (!M2) & CA14 & (!CA13) & CA12; 
+    (!SW_B) & (CPU_RWB # ROMSELB) & CA14 & (!CA13) & CA12; 
 
 /* A14 on the program RAM is 
    - 1 when the switches are 0b01
