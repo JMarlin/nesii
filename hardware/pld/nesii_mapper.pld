@@ -17,8 +17,8 @@ Device     g16v8ma;
 /** Inputs **/ 
 
 PIN    1  = CPU_RWB;
-PIN    2  = SW_A;
-PIN    3  = SW_B;
+PIN    2  = SW_B;
+PIN    3  = SW_A;
 PIN    4  = VRAM_MIRROR_IN_B;
 PIN    5  = VRAM_MIRROR_IN_A; 
 PIN    6  = CA12;
