@@ -87,7 +87,7 @@ compare_cmd_no_match:
     rts
 
 process_command:
-    ldy $ff
+    ldy #$ff
 process_space_check:
     iny
     lda text_buffer,y
