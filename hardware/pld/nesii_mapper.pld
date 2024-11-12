@@ -78,7 +78,7 @@ PRG_RAM_CEB =
     ROMSELB    # (!SW_B & CA14); 
 
 /* ROM is selected at 0xEXXX - 0xFXXX if switch B is off */
-BIOS_ROM_CEB = ROMSELB # !CA14 # !CA13 # SW_B;
+BIOS_ROM_CEB = ROMSELB # !CA14 # !CA13 # !CA12 # SW_B;
 
 
 
