@@ -60,10 +60,9 @@ VRAM_MIRROR_OUT =
     (( (SW_B & SW_A)) & VRAM_MIRROR_IN_A)
   # ((!(SW_B & SW_A)) & VRAM_MIRROR_IN_B); 
 
-/* If Switch B is not set, Clock the data bus into Switch A and Switch B on a write to 0xDXXX */ 
-SWITCH_CLK = 
-    (!SW_B) & (CPU_RWB # ROMSELB) & CA14 & (!CA13) & CA12; 
-
+/* If Switch B is not set, Clock the data bus into Switch A and Switch B on a write to 0xFXXX */ 
+SWITCH_CLK = ROMSELB # CPU_RWB # !CA14 # !CA13 # !CA12 # SW_B;
+   
 /* A14 on the program RAM is 
    - 1 when the switches are 0b01
    - CA14 in all other cases */
@@ -77,8 +76,8 @@ CPU_WRB = !CPU_RWB;
 PRG_RAM_CEB = 
     ROMSELB    # (!SW_B & CA14); 
 
-/* ROM is selected at 0xEXXX - 0xFXXX if switch B is off */
-BIOS_ROM_CEB = ROMSELB # CPU_WRB # !CA14 # !CA13 # !CA12 # SW_B;
+/* ROM is selected at reads to 0xFXXX if switch B is off */
+BIOS_ROM_CEB = ROMSELB # !CA14 # !CA13 # !CA12 # SW_B;
 
 
 

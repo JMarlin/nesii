@@ -27,7 +27,7 @@ launcher_entry:
     jsr binary_loader_load
     ;Switch low cart RAM mapping
     lda #$02
-    sta $d000
+    sta $f000
     ;Load the second prg block to $8000
     lda #<prg1_str
     sta r0
@@ -61,7 +61,7 @@ write_next_chr_byte:
     bne write_next_chr_byte
 ;Everything should be loaded now, hop on into the cart
     lda #$01
-    sta $d000
+    sta $f000
     jmp ($fffc)
 
 apple_ii_message:

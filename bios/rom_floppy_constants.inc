@@ -11,7 +11,7 @@ IWM_SEL_DRIVE_1 = $c0ea             ;selects drive 1
 IWM_Q6_OFF      = $c0ec             ;read
 IWM_Q7_OFF      = $c0ee             ;WP sense/read
 
-CART_SWITCHES   = $d000
+CART_SWITCHES   = $f000
 
 data_ptr        = $26       ;pointer to BOOT1 data buffer
 slot_index      = $2b       ;slot number << 4
