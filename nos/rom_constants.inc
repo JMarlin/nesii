@@ -14,7 +14,7 @@
     floppy_off        = $ffe8
     floppy_on         = $ffec
 
-    cart_switches    = $d000
+    cart_switches    = $f000
     iwm_ph0_off      = $c080
     iwm_ph0_on       = $c081
     iwm_ph2_off      = $c084
