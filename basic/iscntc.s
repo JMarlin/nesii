@@ -23,4 +23,5 @@
 .ifdef SYM1
 .include "sym1_iscntc.s"
 .endif
+clc
 ;!!! runs into "STOP"

@@ -79,7 +79,7 @@ L2665:
 ; PERFORM NEXT STATEMENT
 ; ----------------------------------------------------------------------------
 NEWSTT:
-        jsr     ISCNTC
+        ;jsr     ISCNTC
         lda     TXTPTR
         ldy     TXTPTR+1
 .if .def(CONFIG_NO_INPUTBUFFER_ZP) && .def(CONFIG_2)

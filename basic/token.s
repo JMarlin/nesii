@@ -40,7 +40,7 @@
 .ifndef CONFIG_NO_POKE
 		keyword_rts "WAIT", WAIT
 .endif
-.ifndef KBD
+.if .not(.def(KBD) || .def(NESII))
 		keyword_rts "LOAD", LOAD
 		keyword_rts "SAVE", SAVE
 .endif

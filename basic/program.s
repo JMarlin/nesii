@@ -717,7 +717,7 @@ L25A6X:
         jmp     LE21F
 LC5A9:
 .else
-        jsr     ISCNTC
+        ;jsr     ISCNTC
 .endif
 .ifndef KBD
         jsr     CRDO
