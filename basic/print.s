@@ -99,7 +99,7 @@ L29B9:
         ldx     #<(INPUTBUFFER-1)
         ldy     #>(INPUTBUFFER-1)
   .else
-    .ifndef APPLE
+    .if .not(.def(APPLE) || .def(NESII))
         ldy     #$00
         sty     INPUTBUFFER,x
         ldx     #LINNUM+1
