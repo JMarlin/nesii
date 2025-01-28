@@ -50,10 +50,10 @@ PIN    19 = BIOS_ROM_CEB;
 
 PRG_RAM_A13 = CA13;
 
-/* Dev select is triggered at 0xCXXX unless Switch B is on */
+/* Dev select is triggered at 0xEXXX unless Switch B is on */
 AII_DEVSELB =
     (SW_B)
-  # (ROMSELB # !CA14 # CA13 # CA12);
+  # (ROMSELB # !CA14 # !CA13 # CA12);
 
 /* If both switches are on, MIRRORING_A is passed through. In all other cases, MIRRORING B is */
 VRAM_MIRROR_OUT = 
