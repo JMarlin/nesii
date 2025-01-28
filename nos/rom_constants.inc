@@ -15,13 +15,13 @@
     floppy_on         = $ffec
 
     cart_switches    = $f000
-    iwm_ph0_off      = $c080
-    iwm_ph0_on       = $c081
-    iwm_ph2_off      = $c084
-    iwm_ph2_on       = $c085
-    iwm_motor_on     = $c089
-    iwm_motor_off    = $c088
-    iwm_sel_drive_1  = $c08a
-    iwm_q6_off       = $c08c
-    iwm_q7_off       = $c08e
+    iwm_ph0_off      = $e080
+    iwm_ph0_on       = $e081
+    iwm_ph2_off      = $e084
+    iwm_ph2_on       = $e085
+    iwm_motor_on     = $e089
+    iwm_motor_off    = $e088
+    iwm_sel_drive_1  = $e08a
+    iwm_q6_off       = $e08c
+    iwm_q7_off       = $e08e
 .endif
