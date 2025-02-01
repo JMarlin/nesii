@@ -72,9 +72,14 @@ PRG_RAM_A14 =
 
 CPU_WRB = !CPU_RWB;
 
-/* RAM is selected if we're in the low half of the cart or Switch B is enabled */
+/* RAM sel is high if
+    - ROMSEL is high OR
+    -   Switch B is low AND
+    -   Bank is $E or $F (top two address bits are high)
+*/
+
 PRG_RAM_CEB = 
-    ROMSELB    # (!SW_B & CA14); 
+    ROMSELB # ( (!SW_B) & CA14 & CA13 );
 
 /* ROM is selected at reads to 0xFXXX if switch B is off */
 BIOS_ROM_CEB = ROMSELB # !CA14 # !CA13 # !CA12 # SW_B # (!CPU_RWB);
