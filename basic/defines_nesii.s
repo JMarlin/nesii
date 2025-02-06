@@ -27,7 +27,7 @@ WIDTH			:= 30
 WIDTH2			:= 14
 ;
 ;; memory layout
-RAMSTART2	:= $8000
+RAMSTART2	:= $B000
 ;
 ;; monitor functions
 ;MONRDKEY        := $FFDC

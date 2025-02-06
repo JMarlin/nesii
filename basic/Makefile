@@ -18,7 +18,7 @@ install: BASIC ../nos/nos.do
 	$(CIDERPRESS2)/cp2 sa ../nos/nos.do BASIC type=bin
 
 BASIC: $(UTILS)/bin2dos.py basic.bin
-	$(UTILS)/bin2dos.py 0x9D00 basic.bin BASIC
+	$(UTILS)/bin2dos.py 0x8300 basic.bin BASIC
 
 basic.o: $(SOURCES)
 	ca65 -D nesii msbasic.s -o basic.o -l basic.lst
