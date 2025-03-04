@@ -191,6 +191,9 @@ TILE_LOAD_LOOP:
     LDA #$00
     STA $4000
 
+;Init keyboard
+JSR INITKEYBOARD
+
 lda #<BOOT_MSG
 sta $03
 lda #>BOOT_MSG

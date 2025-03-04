@@ -82,11 +82,6 @@ init:
 
 ;Indicate that we haven't yet clocked in any bits from the keyboard
     JSR INITKEYBOARD
-    LDA #$FF
-    STA LAST_KB_BIT
-    LDA #$00
-    STA CURRENT_KB_COL
-    STA CURRENT_KB_ROW
 
 .ifdef SINGLESTEP
        TSX

@@ -3,6 +3,10 @@
 
 INITKEYBOARD:
 .GLOBAL INITKEYBOARD
+    LDA #$FF
+    STA LAST_KB_BIT
+    LDA #48
+    STA SHIFT_OFFSET
     ;Loop over each column and check the 7th row to see if we are at column 1
 KB_INIT_COLUMN_LOOP:
     LDA #$01
@@ -37,6 +41,10 @@ CLK_KB_BIT_LOOP:
     LDA LAST_KB_BIT
     AND #$01
     BNE CONTINUE_KB_BIT_LOOP
+    TXA
+    CLC
+    ADC SHIFT_OFFSET
+    TAX
     LDA KEY_LUT,X
     PHA 
     LDA #$01
@@ -228,6 +236,7 @@ WRAP_SCROLL:
 
 .SEGMENT "KEY_LUT"
 KEY_LUT:
+;Non-shifted
 .BYTE ';'
 .BYTE 'L'
 .BYTE 'K'
@@ -257,13 +266,13 @@ KEY_LUT:
 .BYTE 'D'
 .BYTE 'F'
 .BYTE 'G'
-.BYTE $00
+.BYTE $01 ;shift
 .BYTE 'Q'
 .BYTE 'W'
 .BYTE 'E'
 .BYTE 'R'
 .BYTE 'T'
-.BYTE $00
+.BYTE $02 ;ctrl
 .BYTE '1'
 .BYTE '2'
 .BYTE '3'
@@ -276,6 +285,55 @@ KEY_LUT:
 .BYTE 'M'
 .BYTE 'N'
 .BYTE '+'
+;Shifted
+.BYTE ':'
+.BYTE 'L'
+.BYTE 'K'
+.BYTE 'J'
+.BYTE 'H'
+.BYTE $20
+.BYTE 'P'
+.BYTE 'O'
+.BYTE 'I'
+.BYTE 'U'
+.BYTE 'Y'
+.BYTE $0D
+.BYTE ')'
+.BYTE '('
+.BYTE '*'
+.BYTE '&'
+.BYTE '^'
+.BYTE $00
+.BYTE 'Z'
+.BYTE 'X'
+.BYTE 'C'
+.BYTE 'V'
+.BYTE 'B'
+.BYTE '"' ;$00
+.BYTE 'A'
+.BYTE 'S'
+.BYTE 'D'
+.BYTE 'F'
+.BYTE 'G'
+.BYTE $01 ;shift
+.BYTE 'Q'
+.BYTE 'W'
+.BYTE 'E'
+.BYTE 'R'
+.BYTE 'T'
+.BYTE $02 ;ctrl
+.BYTE '!'
+.BYTE '@'
+.BYTE '#'
+.BYTE '$'
+.BYTE '%'
+.BYTE $00
+.BYTE '-'
+.BYTE '>'
+.BYTE '<'
+.BYTE 'M'
+.BYTE 'N'
+.BYTE '='
 
 .SEGMENT "CHR_LUT"
 CHR_LUT:
