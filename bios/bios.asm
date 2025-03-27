@@ -184,9 +184,14 @@ TILE_LOAD_LOOP:
     LDA #$00
     STA IS_SCROLLING
 
-;Enable rendering
+;Enable rendering and interrupts
     LDA #$0E
     STA $2001
+
+;Enable vblank interrupt/NMI
+    LDA $2002 ;Read PPUSTATUS to ensure vblank flag is cleared
+    LDA #$80
+    STA $2000
 
     LDA #$00
     STA $4000
@@ -476,6 +481,30 @@ BOOT_MSG:
 READ_ERROR_MSG:
     .ASCIIZ "READ ERROR"
 
+.GLOBAL PRNTCHR_REAL
+NMI:
+.global NMI
+;Stash regs
+    pha
+    tya
+    pha
+    txa
+    pha
+;Print a test char
+    LDA chrout_head
+    BEQ NMI_DONE
+    JSR PRNTCHR_REAL
+    LDA #$00
+    STA chrout_head
+;Restore regs
+NMI_DONE:
+    pla
+    tax
+    pla
+    tay
+    pla
+    RTI
+
 IRQ_BRK_HANDLE:
     RTI
    
@@ -535,7 +564,7 @@ rts
 .byte "NES" ;FFF0
 
 .segment "VECTORS"
-.word $0000
+.word NMI
 .word ENTRY
 .word IRQ_BRK_HANDLE
 

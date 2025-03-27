@@ -1,6 +1,21 @@
 .SEGMENT "CODE"
 .INCLUDE "char_io.inc"
 
+;TODO: Init - clear key matrix (or rather, init to default state to avoid ghost keys)
+;TODO: Init - clear in buffer
+;TODO: Init - clear out buffer
+;DONE: vblank - register a vblank interrupt
+;TODO: vblank - pull and display all pending chars from chrout
+;      (don't update actual ringbuf pointers until all displayed so that no more than bufsz chars are
+;      ever attempted to be written during vblank time);
+;TODO: vblank - poll keyboard and update key matrix buffer
+;TODO: vblank - xor incoming key matrix values with old state, then rotate through bits and insert
+;      the characters for any set positions into chrin
+;TODO: vblank - drop incoming key if chrin is full
+;TODO: vblank - specifically check shift state in current key matrix state and use to alter chr lookup
+;TODO: Putchar - insert into ring buffer if space available or hang until space is available
+;TODO: Getchar - pull from ring buffer, hang if empty until not empty
+
 INITKEYBOARD:
 .GLOBAL INITKEYBOARD
     LDA #$FF
@@ -22,6 +37,9 @@ KB_ROW_SKIP_LOOP:
     AND #$01
     BNE KB_INIT_COLUMN_LOOP
 KB_COL_ONE_FOUND:
+    RTS
+
+SCANKEYS:
     RTS
 
 GETKEY:
@@ -79,10 +97,13 @@ RETURN_STACK_KEY_VALUE:
 ;Wait for VBLANK
 PRNTCHR:
 .GLOBAL PRNTCHR
-:
-    BIT $2002
-    BPL :-
-
+    STA chrout_head
+WAIT_PRINTED:
+    LDA chrout_head
+    BNE WAIT_PRINTED
+    RTS
+.GLOBAL PRNTCHR_REAL
+PRNTCHR_REAL:
     ;Look up the tile number of this character, print nothing if it was zero
     TAX
     LDA CHR_LUT,X

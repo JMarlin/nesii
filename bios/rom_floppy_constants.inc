@@ -1,5 +1,5 @@
 STACK           = $0100  
-TWOS_BUFFER     = $0200    ;holds the 2-bit chunks
+TWOS_BUFFER     = $0300    ;holds the 2-bit chunks
 BOOT1           = $0400   ;buffer for next stage of loader
 IWM_PH0_OFF     = $e080             ;stepper motor control
 IWM_PH0_ON      = $e081             ;stepper motor control

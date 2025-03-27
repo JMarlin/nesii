@@ -14,7 +14,7 @@ clean:
 	rm -f *.map
 
 SHELL: $(UTILS)/bin2dos.py shell.bin
-	$(UTILS)/bin2dos.py 0x8000 shell.bin SHELL
+	$(UTILS)/bin2dos.py 0x8100 shell.bin SHELL
 
 shell.bin: shell.cfg $(SHELL_OBJECTS)
 	ld65 -m shell.map -o shell.bin -C shell.cfg $(SHELL_OBJECTS)
