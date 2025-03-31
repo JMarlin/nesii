@@ -1,26 +1,41 @@
 .SEGMENT "CODE"
 .INCLUDE "char_io.inc"
 
-;TODO: Init - clear key matrix (or rather, init to default state to avoid ghost keys)
-;TODO: Init - clear in buffer
-;TODO: Init - clear out buffer
+;DONE: Init - clear key matrix (or rather, init to default state to avoid ghost keys)
+;DONE: Init - clear in buffer
+;DONE: Init - clear out buffer
 ;DONE: vblank - register a vblank interrupt
-;TODO: vblank - pull and display all pending chars from chrout
-;      (don't update actual ringbuf pointers until all displayed so that no more than bufsz chars are
-;      ever attempted to be written during vblank time);
+;DONE: vblank - pull and display all pending chars from chrout
 ;TODO: vblank - poll keyboard and update key matrix buffer
 ;TODO: vblank - xor incoming key matrix values with old state, then rotate through bits and insert
 ;      the characters for any set positions into chrin
 ;TODO: vblank - drop incoming key if chrin is full
 ;TODO: vblank - specifically check shift state in current key matrix state and use to alter chr lookup
-;TODO: Putchar - insert into ring buffer if space available or hang until space is available
+;DONE: Putchar - insert into ring buffer if space available or hang until space is available
 ;TODO: Getchar - pull from ring buffer, hang if empty until not empty
 
 INITKEYBOARD:
 .GLOBAL INITKEYBOARD
+;Clear the memory-resident copy of the key matrix bitmap
+    LDA #$00
+    LDX #$06
+    CLC
+@start_matrix_loop:
+    BEQ @end_matrix_loop
+    STA key_matrix_buffer,X
+    DEX
+    BCC @start_matrix_loop
+@end_matrix_loop:
+;Clear the 128-byte ring buffer used for character output
+    STA chrout_read_ptr
+    STA chrout_write_ptr
+;Clear the 64-byte ring buffer used for character input
+    STA chrin_read_ptr
+    STA chrin_write_ptr
+;Set keyboard state variables to initial values
     LDA #$FF
     STA LAST_KB_BIT
-    LDA #48
+    LDA #$00 ;#48
     STA SHIFT_OFFSET
     ;Loop over each column and check the 7th row to see if we are at column 1
 KB_INIT_COLUMN_LOOP:
@@ -94,16 +109,29 @@ RETURN_STACK_KEY_VALUE:
     RTS
 
 ;PRINT CHARACTER SUBROUTINE
-;Wait for VBLANK
 PRNTCHR:
 .GLOBAL PRNTCHR
-    STA chrout_head
-WAIT_PRINTED:
-    LDA chrout_head
-    BNE WAIT_PRINTED
-    RTS
-.GLOBAL PRNTCHR_REAL
-PRNTCHR_REAL:
+;Back-up the passed-in character value
+    pha
+;Loop until the read pointer isn't just ahead of the write pointer
+;(indicates that the buffer is full)
+    ldx chrout_write_ptr
+    txa
+    clc
+    adc #$01
+    and #$0f
+    tay
+@wait_for_space:
+    cmp chrout_read_ptr
+    beq @wait_for_space
+;Grab the passed-in char back off the stack, store at write ptr, store advanced write ptr
+    pla
+    sta chrout_buffer,x
+    sty chrout_write_ptr
+    rts
+
+;This routine actually places characters onto the screen
+render_character:
     ;Look up the tile number of this character, print nothing if it was zero
     TAX
     LDA CHR_LUT,X

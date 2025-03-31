@@ -1,6 +1,7 @@
 .segment "CODE"
 .include "../globals.inc"
 .include "console.inc"
+.include "command_processor.inc"
 .include "hello_command.inc"
 .include "mon_command.inc"
 .include "dir_command.inc"
@@ -76,7 +77,7 @@ compare_cmd:
 compare_next_char:
     iny
     lda text_buffer,y
-    cmp (cmp_string),y
+    cmp (string_ptr),y
     bne compare_cmd_no_match
     cmp #$00
     bne compare_next_char
@@ -108,12 +109,12 @@ next_command:
     iny
     ;Load string ptr LSB
     lda command_table,y
-    sta cmp_string
+    sta string_ptr
     ;Load string ptr MSB
     iny 
     lda command_table,y
     beq process_command_no_match
-    sta cmp_string+1
+    sta string_ptr+1
     sty cur_cmd_index
     jsr compare_cmd
     ldy cur_cmd_index

@@ -4,6 +4,8 @@
     .include "../rom_constants.inc"
     .include "../globals.inc"
 
+    text_buffer = $0200 ;64-byte buffer for incoming command
+
     console_init   = init_keyboard
     console_prints = prints
     console_printc = printc
