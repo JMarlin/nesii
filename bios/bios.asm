@@ -188,6 +188,8 @@ TILE_LOAD_LOOP:
     LDA #$0E
     STA $2001
 
+    jsr INITKEYBOARD
+
 ;Enable vblank interrupt/NMI
     LDA $2002 ;Read PPUSTATUS to ensure vblank flag is cleared
     LDA #$80
@@ -195,9 +197,6 @@ TILE_LOAD_LOOP:
 
     LDA #$00
     STA $4000
-
-;Init keyboard
-JSR INITKEYBOARD
 
 lda #<BOOT_MSG
 sta $03
@@ -490,6 +489,7 @@ NMI:
     txa
     pha
     jsr process_chrout_buffer
+    jsr scan_keyboard
 ;Restore regs
 NMI_DONE:
     pla
@@ -497,7 +497,7 @@ NMI_DONE:
     pla
     tay
     pla
-    RTI
+    rti
 
 IRQ_BRK_HANDLE:
     RTI

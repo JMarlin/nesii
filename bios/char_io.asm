@@ -6,7 +6,7 @@
 ;DONE: Init - clear out buffer
 ;DONE: vblank - register a vblank interrupt
 ;DONE: vblank - pull and display all pending chars from chrout
-;TODO: vblank - poll keyboard and update key matrix buffer
+;DONE: vblank - poll keyboard and update key matrix buffer
 ;TODO: vblank - xor incoming key matrix values with old state, then rotate through bits and insert
 ;      the characters for any set positions into chrin
 ;TODO: vblank - drop incoming key if chrin is full
@@ -54,59 +54,91 @@ KB_ROW_SKIP_LOOP:
 KB_COL_ONE_FOUND:
     RTS
 
-SCANKEYS:
-    RTS
+scan_keyboard:
+;Clear the current working byte, leaving a sentinel in the 1s place 
+    ldx #$00
+@read_next_byte:
+    clc
+    cpx #$08
+    beq @key_scan_done
+    lda #$02
+    sta temp_kb_matrix_row
+    lda #$01
+@read_next_bit:
+    sta $4016
+    lda $4017
+    ror
+    rol temp_kb_matrix_row
+    bcc @read_next_bit   ;Loop back to first bit if we didn't get the sentinel
+;Sentinel bit fell off, stash (~new & old) in temp and new back in matrix
+;Note: Calculation is backwards from what you might think because
+;      keys are 0 when pressed
+    lda temp_kb_matrix_row
+    pha
+    eor #$ff ;invert
+    and key_matrix_buffer,x
+    sta temp_kb_matrix_row
+    pla
+    sta key_matrix_buffer,x
+;Scan through the temp bitmap and insert a key into the ring buffer for each press
+    txa ; Multiply x by 8
+    asl
+    asl
+    asl
+    tax
+    lda temp_kb_matrix_row
+    ldy #$08
+@log_next_press:
+    lda temp_kb_matrix_row
+    rol
+    bcc @dont_log_key ;If the bit that just fell off was set, that indicates that key was pressed
+    sta temp_kb_matrix_row ;Stash press bitmap
+    ;Stash current key index
+    txa
+    pha
+    ;Look up pressed key and ignore if it's non-printing
+    lda KEY_LUT,x
+    beq @dont_log_key
+    ;Key was pressed, put it in the buffer (or drop if we're full)
+    tax ;Stash key value to x
+    lda chrin_write_index
+    clc
+    adc #$01
+    and #chrin_index_mask
+    pha ;Stash advanced write ptr
+    cmp chrin_read_index
+    beq @drop_keypress
+;Get the character value, store at write ptr, store advanced write ptr
+    txa ;Stash key value to stack
+    pha
+    ldx chrin_write_index
+    pla ;Restore key value and store
+    sta chrin_buffer,x
+    pla ;Restore advanced write ptr
+    sta chrin_write_index
+@drop_keypress:
+    pla ;Drop backed-up advanced write ptr
+@dont_log_key:
+    pla ;Restore key index
+    tax
+    ;Increment key index and bit index
+    inx
+    dey
+    ;Process next bitmap value if we haven't finished the byte/row
+    bne @log_next_press
+    txa ; Divide x by 8
+    lsr
+    lsr
+    lsr
+;Proceed to reading the next byte/row
+    lda #$00
+    jmp @read_next_byte  
+@key_scan_done:
+    rts
 
 GETKEY:
-.GLOBAL GETKEY
     LDA #0
-    STA KEY_WAS_FOUND
-    LDX #0
-NEXT_KB_COLUMN_LOOP:
-    LDY #6
-    LDA #01
-CLK_KB_BIT_LOOP:
-    STA $4016
-    LDA $4017
-    STA LAST_KB_BIT
-    LDA KEY_WAS_FOUND
-    BNE CONTINUE_KB_BIT_LOOP
-    LDA LAST_KB_BIT
-    AND #$01
-    BNE CONTINUE_KB_BIT_LOOP
-    TXA
-    CLC
-    ADC SHIFT_OFFSET
-    TAX
-    LDA KEY_LUT,X
-    PHA 
-    LDA #$01
-    STA KEY_WAS_FOUND
-    CLC
-    BCC CONTINUE_KB_BIT_LOOP
-DO_ANOTHER_INNER_KB_LOOP:
-    LDA #$00
-    CLC
-    BCC CLK_KB_BIT_LOOP
-CONTINUE_KB_BIT_LOOP:
-    INX
-    DEY
-    BNE DO_ANOTHER_INNER_KB_LOOP
-    TXA
-    CMP #48
-    BNE NEXT_KB_COLUMN_LOOP
-    LDA KEY_WAS_FOUND
-    BNE RETURN_STACK_KEY_VALUE
-    LDA #$FF
-    STA LAST_PRESSED_KEY
-    CLC
-    BCC GETKEY
-RETURN_STACK_KEY_VALUE:
-    PLA
-    CMP LAST_PRESSED_KEY
-    BEQ GETKEY
-    STA LAST_PRESSED_KEY
-    RTS
+    rts
 
 ;PRINT CHARACTER SUBROUTINE
 PRNTCHR:
@@ -118,7 +150,7 @@ PRNTCHR:
     txa
     clc
     adc #$01
-    and #chrin_index_mask
+    and #chrout_index_mask
     tay
 @wait_for_space:
     cmp chrout_read_index

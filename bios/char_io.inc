@@ -7,13 +7,13 @@
     SCROLL_VALUE = $06
     SHIFT_OFFSET = $07
     CURRENT_KB_ROW = $08
-    KEY_WAS_FOUND = $09
+    temp_kb_matrix_row = $09
     LAST_KB_BIT = $0a
     LAST_PRESSED_KEY = $0b
 
     chrin_buffer      = $0240   ; chrin is an 8-char ring buffer for storing typed but unread chars
     chrout_buffer     = $0248   ; chrout is an 8-char ring buffer for storing written but undisplayed chars
-    key_matrix_buffer = $0250   ; 6-byte buffer holding last read state of the keyboard matrix
+    key_matrix_buffer = $0250   ; 8-byte buffer holding last read state of the keyboard matrix
 
     chrin_index_mask = $07
     chrin_read_index    = $50
@@ -28,4 +28,5 @@
     .GLOBAL PRINTSTR
     .GLOBAL GETKEY
     .global process_chrout_buffer
+    .global scan_keyboard
 .endif
