@@ -481,7 +481,6 @@ BOOT_MSG:
 READ_ERROR_MSG:
     .ASCIIZ "READ ERROR"
 
-.GLOBAL PRNTCHR_REAL
 NMI:
 .global NMI
 ;Stash regs
@@ -490,26 +489,7 @@ NMI:
     pha
     txa
     pha
-;Check and exit if the out buffer has been drained
-;(read ptr == write ptr)
-@check_next_char:
-    lda chrout_read_ptr
-    cmp chrout_write_ptr
-    beq @chrout_done
-;There's at least one character left in the buffer,
-;grab it and increment the read pointer (being sure to wrap)
-    tax
-    tay
-    lda chrout_buffer,x
-    tax
-    iny
-    tya
-    and #$0f
-    sta chrout_read_ptr
-    txa
-    jsr render_character
-    jmp @check_next_char
-@chrout_done:    
+    jsr process_chrout_buffer
 ;Restore regs
 NMI_DONE:
     pla

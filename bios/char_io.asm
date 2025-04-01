@@ -27,11 +27,11 @@ INITKEYBOARD:
     BCC @start_matrix_loop
 @end_matrix_loop:
 ;Clear the 128-byte ring buffer used for character output
-    STA chrout_read_ptr
-    STA chrout_write_ptr
+    STA chrout_read_index
+    STA chrout_write_index
 ;Clear the 64-byte ring buffer used for character input
-    STA chrin_read_ptr
-    STA chrin_write_ptr
+    STA chrin_read_index
+    STA chrin_write_index
 ;Set keyboard state variables to initial values
     LDA #$FF
     STA LAST_KB_BIT
@@ -110,24 +110,46 @@ RETURN_STACK_KEY_VALUE:
 
 ;PRINT CHARACTER SUBROUTINE
 PRNTCHR:
-.GLOBAL PRNTCHR
 ;Back-up the passed-in character value
     pha
 ;Loop until the read pointer isn't just ahead of the write pointer
 ;(indicates that the buffer is full)
-    ldx chrout_write_ptr
+    ldx chrout_write_index
     txa
     clc
     adc #$01
-    and #$0f
+    and #chrin_index_mask
     tay
 @wait_for_space:
-    cmp chrout_read_ptr
+    cmp chrout_read_index
     beq @wait_for_space
 ;Grab the passed-in char back off the stack, store at write ptr, store advanced write ptr
     pla
     sta chrout_buffer,x
-    sty chrout_write_ptr
+    sty chrout_write_index
+    rts
+
+process_chrout_buffer:
+;Check and exit if the out buffer has been drained
+;(read ptr == write ptr)
+@check_next_char:
+    lda chrout_read_index
+    cmp chrout_write_index
+    beq @chrout_done
+;There's at least one character left in the buffer,
+;grab it and increment the read pointer (being sure to wrap)
+    tax
+    tay
+    lda chrout_buffer,x
+    tax
+    iny
+    tya
+    and #chrout_index_mask
+    sta chrout_read_index
+    txa
+    jsr render_character
+    jmp @check_next_char
+@chrout_done:    
     rts
 
 ;This routine actually places characters onto the screen
